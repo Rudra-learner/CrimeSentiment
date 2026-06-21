@@ -3,6 +3,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import DateTime
+from sqlalchemy import Boolean
 
 from app.database.database import Base
 
@@ -30,3 +31,4 @@ class RawArticle(Base):
     article_text = Column(Text)
 
     collected_at = Column(DateTime)
+    is_preprocessed = Column(Boolean,default=False,nullable=False)

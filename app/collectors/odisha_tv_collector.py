@@ -1,0 +1,350 @@
+from datetime import datetime
+import requests
+
+from bs4 import BeautifulSoup
+from newspaper import Article
+from langdetect import detect
+
+from app.database.database import SessionLocal
+from app.models.article import RawArticle
+
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+BASE_URL = "https://odishatv.in/tags/nayagarh"
+
+KEYWORDS = [
+
+    "nayagarh",
+    "ନୟାଗଡ଼",
+
+    "ranpur",
+    "ରଣପୁର",
+
+    "daspalla",
+    "ଦଶପଲ୍ଲା",
+
+    "odagaon",
+    "ଓଡ଼ଗାଁ",
+
+    "khandapada",
+    "ଖଣ୍ଡପଡା",
+
+    "gania",
+    "ଗଣିଆ",
+
+    "bhapur",
+    "ଭାପୁର",
+
+    "sarankul",
+    "ସରାଙ୍କୁଳ",
+
+    "banigochha",
+    "ବାଣିଗୋଛା",
+
+    "kantilo",
+    "କଣ୍ଟିଲୋ"
+]
+
+
+def article_exists(db, url):
+
+    return (
+        db.query(RawArticle)
+        .filter(RawArticle.url == url)
+        .first()
+        is not None
+    )
+
+
+def extract_article(url):
+
+    try:
+
+        print(f"\nDownloading: {url}")
+
+        news = Article(
+            url,
+            language="en"
+        )
+
+        news.download()
+        news.parse()
+
+        title = news.title.strip()
+
+        article_text = news.text.strip()
+
+        published_date = ""
+
+        if news.publish_date:
+            published_date = str(
+                news.publish_date
+            )
+
+        try:
+
+            language = detect(
+                article_text
+            )
+
+        except:
+
+            language = "unknown"
+
+        return {
+
+            "title": title,
+            "article_text": article_text,
+            "published_date": published_date,
+            "language": language
+
+        }
+
+    except Exception as e:
+
+        print(
+            f"Article Error: {e}"
+        )
+
+        return None
+
+
+def is_nayagarh_related(
+    title,
+    article_text
+):
+
+    text = (
+        title +
+        " " +
+        article_text
+    ).lower()
+
+    for keyword in KEYWORDS:
+
+        if keyword.lower() in text:
+            return True
+
+    return False
+
+
+def save_article(
+    db,
+    title,
+    url,
+    article_text,
+    published_date,
+    language
+):
+
+    try:
+
+        article = RawArticle(
+
+            title=title,
+
+            source="OTV",
+
+            url=url,
+
+            language=language,
+
+            published_date=published_date,
+
+            article_text=article_text,
+
+            collected_at=datetime.utcnow()
+
+        )
+
+        db.add(article)
+
+        db.commit()
+
+        print(
+            f"Saved: {title}"
+        )
+
+        return True
+
+    except Exception as e:
+
+        db.rollback()
+
+        print(
+            f"Database Error: {e}"
+        )
+
+        return False
+
+
+def collect_article_urls():
+
+    article_urls = set()
+
+    try:
+
+        for page in range(1, 11):
+
+            if page == 1:
+
+                page_url = (
+                    "https://odishatv.in/tags/nayagarh"
+                )
+
+            else:
+
+                page_url = (
+                    f"https://odishatv.in/tags/nayagarh?page={page}"
+                )
+
+            print(
+                f"\nProcessing Page {page}"
+            )
+
+            response = requests.get(
+                page_url,
+                headers=HEADERS,
+                timeout=20
+            )
+
+            soup = BeautifulSoup(
+                response.text,
+                "html.parser"
+            )
+
+            for link in soup.find_all(
+                "a",
+                href=True
+            ):
+
+                href = link["href"]
+
+                if not href.startswith(
+                    "https://odishatv.in/"
+                ):
+                    continue
+
+                article_urls.add(
+                    href
+                )
+
+    except Exception as e:
+
+        print(
+            f"URL Collection Error: {e}"
+        )
+
+    return article_urls
+
+
+def collect_articles():
+
+    print("\n================================")
+    print("OTV NAYAGARH COLLECTOR")
+    print("================================\n")
+
+    db = SessionLocal()
+
+    saved_count = 0
+
+    try:
+
+        urls = collect_article_urls()
+
+        print(
+            f"\nTotal URLs Found: {len(urls)}"
+        )
+
+        for url in urls:
+
+            if article_exists(
+                db,
+                url
+            ):
+
+                print(
+                    "Already Exists"
+                )
+
+                continue
+
+            article = extract_article(
+                url
+            )
+
+            if not article:
+                continue
+
+            if not is_nayagarh_related(
+
+                article["title"],
+                article["article_text"]
+
+            ):
+
+                print(
+                    "Skipped Non-Nayagarh:",
+                    article["title"]
+                )
+
+                continue
+
+            print("\nTITLE:")
+            print(
+                article["title"]
+            )
+
+            print("\nDATE:")
+            print(
+                article["published_date"]
+            )
+
+            print("\nLANGUAGE:")
+            print(
+                article["language"]
+            )
+
+            print("\nTEXT LENGTH:")
+            print(
+                len(
+                    article["article_text"]
+                )
+            )
+
+            saved = save_article(
+
+                db=db,
+
+                title=article["title"],
+
+                url=url,
+
+                article_text=article["article_text"],
+
+                published_date=article["published_date"],
+
+                language=article["language"]
+
+            )
+
+            if saved:
+                saved_count += 1
+
+        print("\n========================")
+        print(
+            f"TOTAL SAVED: {saved_count}"
+        )
+        print("========================")
+
+    finally:
+
+        db.close()
+
+
+if __name__ == "__main__":
+
+    collect_articles()
