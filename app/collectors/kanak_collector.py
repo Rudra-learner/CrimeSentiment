@@ -14,49 +14,37 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
-BASE_SEARCH_URL = "https://kanaknews.com/?s="
+BASE_SEARCH_URL = "https://kanaknews.com/search?title="
 
 SEARCH_TERMS = [
 
-    "nayagarh",
     "ନୟାଗଡ଼",
-    "ranpur",
     "ରଣପୁର",
-
-    "daspalla",
     "ଦଶପଲ୍ଲା",
-
-    "odagaon",
     "ଓଡ଼ଗାଁ",
-
-    "khandapada",
     "ଖଣ୍ଡପଡା",
-
-    "gania",
     "ଗଣିଆ",
-
-    "bhapur",
     "ଭାପୁର",
-
-    "fategarh",
     "ଫତେଗଡ଼",
 
-    "nayagarh police",
     "ନୟାଗଡ଼ ପୋଲିସ",
-    "nayagarh murder",
-    "nayagarh theft",
-    "nayagarh robbery",
-    "nayagarh arrest",
-    "nayagarh crime",
-    "ranpur",
-    "daspalla",
-    "odagaon",
-    "khandapada",
-    "gania",
-    "bhapur"
 
+    "ନୂଆଗାଁ",
+    "ସରାଙ୍କୁଳ",
+    "କଣ୍ଟିଲୋ",
+    "ଇଟାମାଟି",
+    "ରାଜସୁନାଖଳା",
 
-
+    "ହତ୍ୟା",
+    "ଚୋରି",
+    "ଡକାୟତି",
+    "ଗିରଫ",
+    "ଅପରାଧ",
+    "ହତ୍ୟାକାଣ୍ଡ",
+    "ଲୁଟ",
+    "ବ୍ରାଉନସୁଗାର",
+    "ଗଞ୍ଜେଇ",
+    "ସାଇବର ଠକେଇ"
 
 ]
 
