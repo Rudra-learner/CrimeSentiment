@@ -1,0 +1,9 @@
+beautifulsoup4
+cloudscraper
+fastapi
+feedparser
+langdetect
+newspaper3k
+requests
+schedule
+SQLAlchemy
