@@ -20,8 +20,24 @@ SEARCH_TERMS = [
     "nayagarh accident"
 ]
 
-
 BASE_SEARCH_URL = "https://pragativadi.com/?s="
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+
+def normalize_url(url):
+
+    if not url:
+        return None
+
+    url = url.split("#")[0]
+
+    if url.endswith("/"):
+        url = url[:-1]
+
+    return url
 
 
 def article_exists(db, url):
@@ -45,25 +61,17 @@ def save_article(
         return
 
     article = RawArticle(
-
         title=title,
-
         source=source,
-
         url=url,
-
         language=language,
-
         published_date=published_date,
-
         article_text=article_text,
-
-        collected_at=datetime.utcnow()
-
+        collected_at=datetime.utcnow(),
+        is_preprocessed=False
     )
 
     db.add(article)
-
     db.commit()
 
     print(f"Saved: {title}")
@@ -76,20 +84,57 @@ def extract_article(article_url):
         article = Article(article_url)
 
         article.download()
-
         article.parse()
 
         title = article.title
-
         text = article.text
+
+        if len(text.strip()) < 100:
+            return None, None
 
         return title, text
 
     except Exception as e:
 
-        print("Article Extraction Error:", e)
+        print(f"Article Extraction Error: {e}")
 
-        return None, None
+        try:
+
+            response = requests.get(
+                article_url,
+                headers=HEADERS,
+                timeout=10
+            )
+
+            soup = BeautifulSoup(
+                response.text,
+                "html.parser"
+            )
+
+            title = ""
+
+            if soup.title:
+                title = soup.title.get_text(strip=True)
+
+            paragraphs = soup.find_all("p")
+
+            text = " ".join(
+                p.get_text(" ", strip=True)
+                for p in paragraphs
+            )
+
+            if len(text.strip()) < 100:
+                return None, None
+
+            return title, text
+
+        except Exception as e2:
+
+            print(
+                f"Fallback Extraction Error: {e2}"
+            )
+
+            return None, None
 
 
 def collect_articles():
@@ -112,13 +157,8 @@ def collect_articles():
             )
 
             response = requests.get(
-
                 search_url,
-
-                headers={
-                    "User-Agent": "Mozilla/5.0"
-                },
-
+                headers=HEADERS,
                 timeout=20
             )
 
@@ -133,14 +173,15 @@ def collect_articles():
 
                 href = link.get("href")
 
-                title_text = link.get_text(
-                    strip=True
-                )
+                if not href:
+                    continue
+
+                href = normalize_url(href)
 
                 if not href:
                     continue
 
-                if not title_text:
+                if "#respond" in href:
                     continue
 
                 if "pragativadi.com" not in href:
@@ -152,45 +193,35 @@ def collect_articles():
                 if article_exists(db, href):
                     continue
 
-                try:
+                title, article_text = extract_article(
+                    href
+                )
 
-                    title, article_text = extract_article(
-                        href
-                    )
+                if not title:
+                    continue
 
-                    if not title:
-                        continue
+                combined_text = (
+                    title.lower() +
+                    " " +
+                    article_text.lower()
+                )
 
-                    title_lower = title.lower()
+                if "nayagarh" not in combined_text:
+                    continue
 
-                    if "nayagarh" not in title_lower:
-                        continue
+                save_article(
+                    db=db,
+                    title=title,
+                    source="Pragativadi",
+                    url=href,
+                    language="en",
+                    published_date=str(
+                        datetime.utcnow()
+                    ),
+                    article_text=article_text
+                )
 
-                    save_article(
-
-                        db=db,
-
-                        title=title,
-
-                        source="Pragativadi",
-
-                        url=href,
-
-                        language="en",
-
-                        published_date=str(
-                            datetime.utcnow()
-                        ),
-
-                        article_text=article_text
-
-                    )
-
-                    saved_count += 1
-
-                except Exception as e:
-
-                    print("Save Error:", e)
+                saved_count += 1
 
         print(
             f"\nTotal Articles Saved: {saved_count}"
@@ -198,7 +229,7 @@ def collect_articles():
 
     except Exception as e:
 
-        print("Collector Error:", e)
+        print(f"Collector Error: {e}")
 
     finally:
 
@@ -206,5 +237,4 @@ def collect_articles():
 
 
 if __name__ == "__main__":
-
     collect_articles()
