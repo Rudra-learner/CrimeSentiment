@@ -9,7 +9,12 @@ LOCATIONS = [
     "khandapada",
     "gania",
     "bhapur",
-    "kantilo"
+    "fategarh",
+    "banigochha",
+    "kantilo",
+    "itamati",
+    "fategarh police",
+    "nayagarh police"
 ]
 
 

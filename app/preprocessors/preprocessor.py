@@ -9,6 +9,7 @@ from app.preprocessors.language_detector import detect_language
 from app.preprocessors.hash_generator import generate_hash
 from app.preprocessors.crime_detector import detect_crime
 from app.preprocessors.location_detector import detect_location
+from app.preprocessors.location_detector import LOCATIONS
 from app.preprocessors.police_detector import police_mentioned
 from app.preprocessors.case_status_detector import detect_case_status
 from app.preprocessors.officer_detector import detect_officers
@@ -41,6 +42,14 @@ def preprocess_articles():
             crime_category = detect_crime(clean_article)
 
             location = detect_location(clean_article)
+
+            # Only process articles with allowed locations
+            allowed_locations = [loc.lower() for loc in LOCATIONS]
+            if location.lower() not in allowed_locations:
+                article.is_preprocessed = True
+                db.commit()
+                print(f"Skipped - Location not in allowed list: {location}")
+                continue
 
             police = police_mentioned(clean_article)
 
