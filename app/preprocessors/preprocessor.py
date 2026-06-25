@@ -42,6 +42,13 @@ def preprocess_articles():
 
             location = detect_location(clean_article)
 
+            # Only process articles related to Nayagarh
+            if location.lower() != "nayagarh":
+                article.is_preprocessed = True
+                db.commit()
+                print(f"Skipped - Location: {location}")
+                continue
+
             police = police_mentioned(clean_article)
 
             case_status = detect_case_status(clean_article)
