@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 
-from app.database.database import engine, Base
-from app.models.article import RawArticle
+from app.database.database import initialize_database
 
-Base.metadata.create_all(bind=engine)
+initialize_database()
 
 app = FastAPI(
     title="Crime Sentiment Project"

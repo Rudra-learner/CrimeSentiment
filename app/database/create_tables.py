@@ -1,11 +1,7 @@
-from app.database.database import engine, Base
+from app.database.database import initialize_database
 
-# Import all models so SQLAlchemy registers them
-from app.models.article import RawArticle
-from app.models.processed_article import ProcessedArticle
+print("Initializing database...")
 
-print("Creating Tables...")
+initialize_database()
 
-Base.metadata.create_all(bind=engine)
-
-print("Tables Created Successfully")
+print("Database initialized successfully")

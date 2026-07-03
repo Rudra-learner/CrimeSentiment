@@ -1,14 +1,22 @@
+from ast import pattern
+from pydoc import doc, text
 import re
+import token
 
 import spacy
 
 from app.database.database import SessionLocal
 from app.models.officer_mention import OfficerMention
+from app.models.article import RawArticle
+from app.models.processed_article import ProcessedArticle
+from app.models.news_event import NewsEvent
+from app.models.analysis_result import AnalysisResult
 
 
 nlp = spacy.load("en_core_web_sm")
 
-DESIGNATIONS = [
+
+ENGLISH_DESIGNATIONS = [
     "DGP",
     "ADG",
     "IG",
@@ -29,68 +37,108 @@ DESIGNATIONS = [
     "ASI",
     "Assistant Sub Inspector",
     "Head Constable",
-    "Constable",
+    "Constable"
+]
+
+
+ODIA_DESIGNATIONS = [
+    "ଡିଜିପି",
     "ଏସପି",
+    "ଅତିରିକ୍ତ ଏସପି",
     "ଡିଏସପି",
     "ଏସଆଇ",
-    "ଏଏସଆଇ"
+    "ଏଏସଆଇ",
+    "ଆଇଆଇସି",
+    "ଇନ୍ସପେକ୍ଟର",
+    "କନଷ୍ଟେବଳ"
 ]
+
 
 ORGANIZATIONS = [
     "Odisha Police",
     "Nayagarh Police",
     "Crime Branch",
     "CID",
-    "CBI",
-    "Special Task Force",
     "STF",
-    "Economic Offences Wing",
-    "EOW",
-    "Vigilance"
+    "Special Task Force",
+    "ଓଡ଼ିଶା ପୁଲିସ",
+    "ନୟାଗଡ଼ ପୁଲିସ",
+    "କ୍ରାଇମ ବ୍ରାଞ୍ଚ",
+    "ସିଆଇଡି",
+    "ଏସଟିଏଫ"
 ]
+
 
 INVALID_PERSONS = {
     "Police",
-    "Crime",
-    "Crime Branch",
-    "Odisha Police",
-    "Nayagarh Police",
-    "CID",
-    "CBI",
-    "STF",
-    "General",
     "Officer",
-    "Police Officer",
-    "Station",
+    "Crime",
     "Branch",
-    "Nayagarh",
+    "CID",
+    "STF",
     "Odisha",
+    "Nayagarh",
     "Government",
     "Court",
     "Judge",
-    "Magistrate",
-    "Authorities",
-"Police Team",
-"Officials",
-"Media",
-"Victim",
-"Accused",
-"Suspect",
-"Investigators",
-"Crime Branch Team",
-"Police Personnel",
+    "General"
 }
+
+INVALID_VIPS = {
+
+    "Mohan Charan Majhi",
+    "Naveen Patnaik",
+    "Narendra Modi",
+    "Amit Shah",
+    "Droupadi Murmu",
+    "Dharmendra Pradhan",
+    "Prithviraj Harichandan"
+
+}
+
+INVALID_TITLES = [
+
+    "Chief Minister",
+    "CM",
+    "Prime Minister",
+    "PM",
+    "Governor",
+    "Minister",
+    "Cabinet",
+    "MLA",
+    "MP",
+    "Mayor",
+    "Collector",
+    "Commissioner"
+
+]
+
+POLICE_CONTEXT = [
+
+    "police",
+    "investigation",
+    "crime branch",
+    "station",
+    "raid",
+    "iic",
+    "sp",
+    "si",
+    "asi",
+    "inspector",
+    "constable",
+    "officer",
+    "arrest"
+
+]
+
+def contains_odia(text):
+    return bool(re.search(r"[\u0B00-\u0B7F]", text))
 
 
 def normalize_name(name):
-
     name = " ".join(name.split())
-
     name = name.replace(".", "")
-
-    name = re.sub(r"\s+", " ", name)
-
-    return name.strip()
+    return name.strip().title()
 
 
 class EntityExtractor:
@@ -99,7 +147,14 @@ class EntityExtractor:
         self.db = SessionLocal()
 
     def extract_entities(self, text):
-        doc = nlp(text)
+        if contains_odia(text):
+            return {
+                "persons": [],
+                "locations": [],
+                "organizations": self.extract_police_organizations(text)
+            }
+
+        doc = nlp(text[:3000])
 
         persons = []
         locations = []
@@ -107,35 +162,63 @@ class EntityExtractor:
 
         for ent in doc.ents:
             if ent.label_ == "PERSON":
-                persons.append(normalize_name(ent.text))
+                person = normalize_name(ent.text)
+                if person not in INVALID_PERSONS:
+                    persons.append(person)
             elif ent.label_ in ["GPE", "LOC"]:
-                locations.append(ent.text)
+                locations.append(ent.text.strip())
             elif ent.label_ == "ORG":
                 organizations.append(ent.text.strip())
 
         return {
-            "persons": list(set(persons)),
-            "locations": list(set(locations)),
-            "organizations": list(set(organizations))
+            "persons": sorted(list(set(persons))),
+            "locations": sorted(list(set(locations))),
+            "organizations": sorted(
+                list(set(organizations + self.extract_police_organizations(text)))
+            )
         }
 
     def extract_officers(self, text):
+
         officers = []
 
-        doc = nlp(text)
+        if not contains_odia(text):
 
-        for designation in DESIGNATIONS:
-            pattern = rf"{designation}\s+([A-Z][a-zA-Z\.]*(?:\s+[A-Z][a-zA-Z\.]*){{1,3}})"
+            for designation in ENGLISH_DESIGNATIONS:
+
+                pattern = rf"\b{re.escape(designation)}\b\s+([A-Z][a-zA-Z\.]+(?:\s+[A-Z][a-zA-Z\.]+){{1,3}})"
+
+                matches = re.findall(pattern, text)
+
+                for match in matches:
+
+                    name = normalize_name(match)
+
+                    if name in INVALID_PERSONS:
+                        continue
+
+                    if len(name.split()) < 2:
+                        continue
+
+                    officer = {
+                        "designation": designation,
+                        "name": name
+                    }
+
+                    if officer not in officers:
+                        officers.append(officer)
+
+            return officers
+
+        for designation in ODIA_DESIGNATIONS:
+
+            pattern = rf"{designation}\s+([\u0B00-\u0B7F]+(?:\s+[\u0B00-\u0B7F]+){{1,3}})"
+
             matches = re.findall(pattern, text)
 
             for match in matches:
-                name = normalize_name(match)
 
-                if name in INVALID_PERSONS:
-                    continue
-
-                if len(name.split()) < 2:
-                    continue
+                name = " ".join(match.split())
 
                 officer = {
                     "designation": designation,
@@ -145,64 +228,34 @@ class EntityExtractor:
                 if officer not in officers:
                     officers.append(officer)
 
-        for ent in doc.ents:
-            if ent.label_ != "PERSON":
-                continue
-
-            person = normalize_name(ent.text)
-
-            if person in INVALID_PERSONS:
-                continue
-
-            if len(person.split()) < 2:
-                continue
-
-            if len(person.split()) > 4:
-                continue
-
-            start = max(0, ent.start - 5)
-            end = min(len(doc), ent.end + 5)
-            context = doc[start:end].text
-
-            designation = None
-
-            for rank in DESIGNATIONS:
-                if rank.lower() in context.lower():
-                    designation = rank
-                    break
-
-            if designation is None:
-                continue
-
-            officer = {
-                "designation": designation,
-                "name": person
-            }
-
-            if officer not in officers:
-                officers.append(officer)
-
         return officers
 
     def extract_police_stations(self, text):
+
         police_stations = []
 
         patterns = [
-            r"([A-Z][A-Za-z\s]+ Police Station)",
-            r"([A-Z][A-Za-z\s]+ PS)",
-            r"([A-Z][A-Za-z\s]+ Police Outpost)"
+            r"([A-Z][A-Za-z ]+ Police Station)",
+            r"([A-Z][A-Za-z ]+ PS)",
+            r"([A-Z][A-Za-z ]+ Police Outpost)",
+            r"([\u0B00-\u0B7F ]+ଥାନା)"
         ]
 
         for pattern in patterns:
+
             matches = re.findall(pattern, text)
 
             for station in matches:
-                station = " ".join(station.split())
+
+                station = station.strip()
+
+                if len(station.split()) > 5:
+                    continue
 
                 if station not in police_stations:
                     police_stations.append(station)
 
-        return sorted(police_stations)
+        return police_stations
 
     def extract_police_organizations(self, text):
         detected = []
@@ -243,13 +296,10 @@ class EntityExtractor:
             name = officer["name"].strip()
             designation = officer["designation"]
 
-            if len(name.split()) < 2:
+            if len(name) < 3:
                 continue
 
-            if len(name) < 5:
-                continue
-
-            if designation is None:
+            if len(name.split()) > 4:
                 continue
 
             exists = (
@@ -281,24 +331,15 @@ class EntityExtractor:
 
         entities = self.combine_entities(article.clean_text)
 
-        print(f"Officers Found : {entities['officers']}")
-        print(f"Police Stations : {entities['police_stations']}")
-        print(f"Organizations : {entities['organizations']}")
+        print(f"Officers : {entities['officers']}")
+        print(f"Stations : {entities['police_stations']}")
 
         self.save_officer_mentions(article.id, entities)
-
-        print(f"Detected {len(entities['officers'])} officers.")
 
         return entities
 
     def process_all_articles(self):
-        from app.models.processed_article import ProcessedArticle
-
-        articles = (
-            self.db.query(ProcessedArticle)
-            .filter(ProcessedArticle.news_event_id.isnot(None))
-            .all()
-        )
+        articles = self.db.query(ProcessedArticle).all()
 
         print(f"\nFound {len(articles)} articles.\n")
 
@@ -320,17 +361,6 @@ def run_entity_extractor():
 
     try:
         extractor.process_all_articles()
-    finally:
-        extractor.close()
-
-def detect_officers(text):
-    
-
-    extractor = EntityExtractor()
-
-    try:
-        return extractor.extract_officers(text)
-
     finally:
         extractor.close()
 

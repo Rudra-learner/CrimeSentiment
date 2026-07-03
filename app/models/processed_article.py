@@ -73,3 +73,9 @@ class ProcessedArticle(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+    news_event_id = Column(
+    Integer,
+    ForeignKey("news_events.id"),
+    nullable=True
+)

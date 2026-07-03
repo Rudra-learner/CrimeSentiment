@@ -3,6 +3,7 @@ from datetime import datetime
 from app.database.database import SessionLocal
 from app.models.article import RawArticle
 from app.models.processed_article import ProcessedArticle
+from app.models.news_event import NewsEvent
 
 from app.preprocessors.cleaner import clean_text
 from app.preprocessors.language_detector import detect_language
@@ -37,14 +38,26 @@ def preprocess_articles():
 
             language = detect_language(clean_article)
 
+            if language == "unknown":
+                article.is_preprocessed = True
+                db.commit()
+                print("Unknown Language")
+                continue
+
             content_hash = generate_hash(clean_article)
 
             crime_category = detect_crime(clean_article)
 
+            if crime_category == "OTHER":
+                article.is_preprocessed = True
+                db.commit()
+                print("Skipped - Not a Crime Article")
+                continue
+
             location = detect_location(clean_article)
 
-            # Only process articles with allowed locations
             allowed_locations = [loc.lower() for loc in LOCATIONS]
+
             if location.lower() not in allowed_locations:
                 article.is_preprocessed = True
                 db.commit()
@@ -56,6 +69,18 @@ def preprocess_articles():
             case_status = detect_case_status(clean_article)
 
             officers = detect_officers(clean_article)
+
+            duplicate = (
+                db.query(ProcessedArticle)
+                .filter(ProcessedArticle.content_hash == content_hash)
+                .first()
+            )
+
+            if duplicate:
+                article.is_preprocessed = True
+                db.commit()
+                print("Duplicate Article Skipped")
+                continue
 
             processed_article = ProcessedArticle(
                 raw_article_id=article.id,
@@ -78,7 +103,19 @@ def preprocess_articles():
 
             db.commit()
 
-            print("Processed Successfully")
+            print(f""" Processed Successfully
+
+                        Crime : {crime_category}
+
+                        Location : {location}
+
+                        Police Mentioned : {police}
+
+                        Case Status : {case_status}
+
+                        Language : {language}
+
+                                                """)
 
     except Exception as e:
 

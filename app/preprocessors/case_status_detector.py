@@ -1,5 +1,6 @@
 SOLVED_KEYWORDS = [
 
+    # Arrest
     "arrested",
     "held",
     "apprehended",
@@ -8,30 +9,49 @@ SOLVED_KEYWORDS = [
     "nabbed",
     "caught",
     "captured",
+
+    # Case solved
     "case solved",
-    "solved",
+    "crime solved",
+    "police solved",
     "cracked",
     "identified",
+
+    # Court
     "chargesheet filed",
     "charge sheet filed",
+    "chargesheet submitted",
     "convicted",
     "sentenced",
-    "accused arrested",
+    "found guilty",
+
+    # All accused
     "all accused arrested",
-    "police solved",
-    "crime solved"
+    "all accused held",
+
+    # English
+    "case cracked",
+    "mastermind arrested",
+
+    # Odia
+    "ଗିରଫ",
+    "ଗିରଫତାର",
+    "ଧରାପଡିଲେ",
+    "ଅଭିଯୁକ୍ତ ଗିରଫ",
+    "ଦୋଷୀ",
+    "ଦଣ୍ଡିତ",
+    "ଚାର୍ଜସିଟ",
+    "ମାମଲା ସମାଧାନ"
 
 ]
-
 
 ONGOING_KEYWORDS = [
 
     "investigation",
-    "investigation underway",
+    "under investigation",
     "probe",
     "probe underway",
-    "police investigating",
-    "under investigation",
+    "investigating",
     "search operation",
     "search underway",
     "questioning",
@@ -43,12 +63,23 @@ ONGOING_KEYWORDS = [
     "awaiting report",
     "manhunt",
     "looking into",
-    "suspected",
+    "crime branch investigating",
     "further investigation",
-    "crime branch investigating"
+
+    # English
+    "police investigating",
+    "investigation continues",
+
+    # Odia
+    "ତଦନ୍ତ",
+    "ଅନୁସନ୍ଧାନ",
+    "ଯାଞ୍ଚ",
+    "ତଦନ୍ତ ଜାରି",
+    "ପଚରାଉଚରା",
+    "ସନ୍ଧାନ",
+    "ଖୋଜାଖୋଜି"
 
 ]
-
 
 UNSOLVED_KEYWORDS = [
 
@@ -56,58 +87,75 @@ UNSOLVED_KEYWORDS = [
     "unidentified",
     "absconding",
     "on the run",
-    "missing",
     "yet to be traced",
     "no clue",
     "no breakthrough",
     "could not trace",
     "could not identify",
-    "still missing",
     "search continues",
     "accused escaped",
-    "fled",
     "escaped",
-    "not arrested"
+    "fled",
+    "not arrested",
+
+    # Missing
+    "missing",
+    "still missing",
+
+    # Odia
+    "ଅଜଣା",
+    "ଅଜ୍ଞାତ",
+    "ଫେରାର",
+    "ନିଖୋଜ",
+    "ଧରାପଡିନାହିଁ",
+    "ଖୋଜା ଚାଲିଛି"
 
 ]
-
 
 PARTIALLY_SOLVED_KEYWORDS = [
 
     "one accused arrested",
     "two accused arrested",
+    "three accused arrested",
     "some accused arrested",
-    "others absconding",
     "remaining accused",
+    "others absconding",
+    "another accused absconding",
     "hunt continues",
     "search for remaining accused",
-    "another accused absconding"
+
+    # English
+    "one arrested",
+    "two arrested",
+
+    # Odia
+    "ଜଣେ ଗିରଫ",
+    "ଦୁଇଜଣ ଗିରଫ",
+    "କେତେକ ଗିରଫ",
+    "ଅନ୍ୟ ଫେରାର",
+    "ଅବଶିଷ୍ଟ ଅଭିଯୁକ୍ତ"
 
 ]
-
 
 def detect_case_status(text):
 
     text = text.lower()
 
+    # Highest priority
     for keyword in PARTIALLY_SOLVED_KEYWORDS:
-
-        if keyword in text:
+        if keyword.lower() in text:
             return "PARTIALLY_SOLVED"
 
     for keyword in SOLVED_KEYWORDS:
-
-        if keyword in text:
+        if keyword.lower() in text:
             return "SOLVED"
 
     for keyword in ONGOING_KEYWORDS:
-
-        if keyword in text:
+        if keyword.lower() in text:
             return "ONGOING"
 
     for keyword in UNSOLVED_KEYWORDS:
-
-        if keyword in text:
+        if keyword.lower() in text:
             return "UNSOLVED"
 
     return "UNKNOWN"
