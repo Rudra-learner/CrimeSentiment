@@ -1,4 +1,3 @@
-import schedule
 import time
 
 from app.collectors.odisha_tv_collector import collect_articles as odisha_tv
@@ -79,22 +78,18 @@ def run_pipeline():
     print("================================\n")
 
 
-# Run every 30 minutes
-schedule.every(30).minutes.do(run_pipeline)
-
-# Run once immediately when scheduler starts
-run_pipeline()
-
-while True:
-
-    try:
-
-        schedule.run_pending()
-
-        time.sleep(60)
-
-    except Exception as e:
-
-        print("Scheduler Error:", e)
-
-        time.sleep(60)
+if __name__ == "__main__":
+    import schedule
+    # Run every 30 minutes
+    schedule.every(30).minutes.do(run_pipeline)
+    
+    # Run once immediately when scheduler starts
+    run_pipeline()
+    
+    while True:
+        try:
+            schedule.run_pending()
+            time.sleep(60)
+        except Exception as e:
+            print("Scheduler Error:", e)
+            time.sleep(60)

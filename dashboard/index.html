@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nayagarh Police - Crime Sentiment Analysis</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+    <div class="dashboard-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-shield-alt logo-img" style="font-size: 32px; color: var(--accent-cyan); margin-bottom: 10px;"></i>
+                <h2>Nayagarh Police</h2>
+                <p>Intelligence Platform</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul id="sidebar-menu">
+                    <li class="active"><a href="#" data-target="view-dashboard"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a></li>
+                    <li><a href="#" data-target="view-news-collection"><i class="fas fa-newspaper"></i> <span>News Collection</span></a></li>
+                    <li><a href="#" data-target="view-news-events"><i class="fas fa-calendar-alt"></i> <span>News Events</span></a></li>
+                    <li><a href="#" data-target="view-crime-analytics"><i class="fas fa-chart-pie"></i> <span>Crime Analytics</span></a></li>
+                    <li><a href="#" data-target="view-sentiment-analysis"><i class="fas fa-brain"></i> <span>Sentiment Analysis</span></a></li>
+                    <li><a href="#" data-target="view-officer-analytics"><i class="fas fa-user-shield"></i> <span>Officer Analytics</span></a></li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="#"><i class="fas fa-cog"></i> <span>Settings</span></a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="btn-icon"><i class="fas fa-bars"></i></button>
+                    <h1>Crime Sentiment Analysis System</h1>
+                    <div class="date-time" id="datetime-display">
+                        <!-- JS injected time -->
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <button id="btn-run-pipeline" class="btn-filter" style="background: var(--accent-purple); color: white; display: flex; align-items: center; gap: 8px;"><i class="fas fa-play"></i> Run Pipeline</button>
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search events, officers, locations...">
+                    </div>
+                    
+                    <div class="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </div>
+                    
+                    <div class="user-profile">
+                        <div class="avatar"><i class="fas fa-user-tie"></i></div>
+                        <div class="user-info">
+                            <span class="name">Administrator</span>
+                            <span class="role">Command Center</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Grid Sections -->
+            <div id="view-dashboard" class="view-section active">
+            
+                <!-- Filters Area -->
+                <div class="filters-bar">
+                    <select id="filter-date"><option>Last 7 Days</option><option>Last 30 Days</option><option>All Time</option></select>
+                    <select id="filter-category"><option>All Categories</option><option>Cyber Fraud</option><option>Theft</option><option>Murder</option></select>
+                    <select id="filter-location"><option>All Locations</option><option>Nayagarh Town</option><option>Ranpur</option></select>
+                    <button class="btn-filter"><i class="fas fa-filter"></i> Apply Filters</button>
+                </div>
+                
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card glass"><div class="kpi-icon blue"><i class="fas fa-file-alt"></i></div><div class="kpi-data"><h3>Total Collected</h3><p id="kpi-collected">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon cyan"><i class="fas fa-check-circle"></i></div><div class="kpi-data"><h3>Processed</h3><p id="kpi-processed">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon orange"><i class="fas fa-exclamation-triangle"></i></div><div class="kpi-data"><h3>Crime Events</h3><p id="kpi-events">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon red"><i class="fas fa-folder-open"></i></div><div class="kpi-data"><h3>Active Cases</h3><p id="kpi-active-cases">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon green"><i class="fas fa-gavel"></i></div><div class="kpi-data"><h3>Solved Cases</h3><p id="kpi-solved">0</p></div></div>
+                </div>
+
+                <!-- Additional KPIs -->
+                <div class="kpi-grid secondary-kpis">
+                    <div class="kpi-card glass"><div class="kpi-icon purple"><i class="fas fa-user-lock"></i></div><div class="kpi-data"><h3>Arrested Cases</h3><p id="kpi-arrested">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon yellow"><i class="fas fa-search"></i></div><div class="kpi-data"><h3>Under Investigation</h3><p id="kpi-investigation">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon teal"><i class="fas fa-bullhorn"></i></div><div class="kpi-data"><h3>Police Mentioned</h3><p id="kpi-police-mentioned">0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-police"><i class="fas fa-smile"></i></div><div class="kpi-data"><h3>Avg Police Sentiment</h3><p id="kpi-avg-police-sent">0.0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-officer"><i class="fas fa-user-shield"></i></div><div class="kpi-data"><h3>Avg Officer Sentiment</h3><p id="kpi-avg-officer-sent">0.0</p></div></div>
+                </div>
+                
+                <div class="dashboard-grid">
+                
+                <!-- Left Column -->
+                <div class="col-left">
+                    
+                    <!-- Crime Analytics -->
+                    <div class="panel glass">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-chart-line"></i> Crime Analytics</h2>
+                            <div class="panel-actions"><i class="fas fa-expand"></i></div>
+                        </div>
+                        <div class="charts-container">
+                            <div class="chart-box">
+                                <h3>Monthly Crime Trend</h3>
+                                <canvas id="chart-monthly-trend"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h3>Crime Categories (Pie)</h3>
+                                <canvas id="chart-category-pie"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h3>Weekly Distribution</h3>
+                                <canvas id="chart-weekly-dist"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Officer Analytics -->
+                    <div class="panel glass">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-user-shield"></i> Officer Analytics</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-officers">
+                                <thead>
+                                    <tr>
+                                        <th>Officer Name</th>
+                                        <th>Designation</th>
+                                        <th>Mentions</th>
+                                        <th>Sentiment Breakdown (Pos/Neu/Neg)</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- AI Insights -->
+                    <div class="panel glass ai-insights">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-robot"></i> AI Insights Panel</h2>
+                        </div>
+                        <div class="insights-list">
+                            <div class="insight-item warning">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <div class="text">
+                                    <h4>Fastest Growing Crime</h4>
+                                    <p>Cyber Fraud mentions have increased by 24% this week.</p>
+                                </div>
+                            </div>
+                            <div class="insight-item danger">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <div class="text">
+                                    <h4>Hotspot Alert</h4>
+                                    <p>Nayagarh Town showing unusual spike in theft reports.</p>
+                                </div>
+                            </div>
+                            <div class="insight-item success">
+                                <i class="fas fa-chart-bar"></i>
+                                <div class="text">
+                                    <h4>Sentiment Improvement</h4>
+                                    <p>Police sentiment improved by 12% following recent cyber cell actions.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- Right Column -->
+                <div class="col-right">
+                    
+                    <!-- Map -->
+                    <div class="panel glass">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-map-marked-alt"></i> Nayagarh District Intelligence Map</h2>
+                        </div>
+                        <div id="district-map" class="map-container"></div>
+                    </div>
+
+                    <!-- News Events Panel -->
+                    <div class="panel glass">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-calendar-alt"></i> News Event Panel</h2>
+                        </div>
+                        <div class="events-list" id="events-list-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Latest News Feed -->
+                    <div class="panel glass">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-rss"></i> Latest Collected News</h2>
+                        </div>
+                        <div class="news-feed" id="news-feed-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Police Dept Sentiment & Case Status -->
+                    <div class="panel glass dual-charts">
+                        <div class="chart-box">
+                            <h2><i class="fas fa-heartbeat"></i> Police Sentiment</h2>
+                            <canvas id="chart-police-sentiment"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h2><i class="fas fa-gavel"></i> Case Status</h2>
+                            <canvas id="chart-case-status"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+                </div>
+            </div>
+
+            <!-- Tabular Views -->
+            <div id="view-news-collection" class="view-section" style="display:none;">
+                <div class="panel glass">
+                    <div class="panel-header"><h2><i class="fas fa-newspaper"></i> News Collection (Raw)</h2></div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-raw-articles">
+                            <thead><tr><th>ID</th><th>Title</th><th>Source</th><th>Date</th><th>Collected At</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="pagination-view-news-collection">
+                        <button class="btn-page prev-page"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <span class="page-info">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+                        <button class="btn-page next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-crime-analytics" class="view-section" style="display:none;">
+                <div class="panel glass">
+                    <div class="panel-header"><h2><i class="fas fa-chart-pie"></i> Processed Articles</h2></div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-processed-articles">
+                            <thead><tr><th>ID</th><th>Title</th><th>Source</th><th>Category</th><th>Location</th><th>Status</th><th>Processed At</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="pagination-view-crime-analytics">
+                        <button class="btn-page prev-page"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <span class="page-info">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+                        <button class="btn-page next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-news-events" class="view-section" style="display:none;">
+                <div class="panel glass">
+                    <div class="panel-header"><h2><i class="fas fa-calendar-alt"></i> News Events</h2></div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-events">
+                            <thead><tr><th>ID</th><th>Event Title</th><th>Category</th><th>Primary Location</th><th>Created At</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="pagination-view-news-events">
+                        <button class="btn-page prev-page"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <span class="page-info">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+                        <button class="btn-page next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-sentiment-analysis" class="view-section" style="display:none;">
+                <div class="panel glass">
+                    <div class="panel-header"><h2><i class="fas fa-brain"></i> Sentiment Analysis Results</h2></div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-analysis">
+                            <thead><tr><th>ID</th><th>Article Title</th><th>Source</th><th>Sentiment</th><th>Confidence</th><th>Analyzed At</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="pagination-view-sentiment-analysis">
+                        <button class="btn-page prev-page"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <span class="page-info">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+                        <button class="btn-page next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-officer-analytics" class="view-section" style="display:none;">
+                <div class="panel glass">
+                    <div class="panel-header"><h2><i class="fas fa-user-shield"></i> Officer Analytics (Raw Mentions)</h2></div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-officer-mentions">
+                            <thead><tr><th>ID</th><th>Officer Name</th><th>Designation</th><th>Police Station</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="pagination-view-officer-analytics">
+                        <button class="btn-page prev-page"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <span class="page-info">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+                        <button class="btn-page next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <footer class="main-footer">
+                <p><strong>AI-Powered Crime Sentiment Analysis System for Nayagarh Police</strong></p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js?v=2"></script>
+</body>
+</html>
