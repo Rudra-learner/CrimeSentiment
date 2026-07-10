@@ -4,8 +4,9 @@ import re
 import time
 
 from bs4 import BeautifulSoup
-from datetime import datetime
+from newspaper import Article
 from langdetect import detect
+from datetime import datetime
 
 from app.database.database import SessionLocal
 from app.models.article import RawArticle
@@ -28,14 +29,7 @@ def article_exists(db, url):
     )
 
 
-def save_article(
-    db,
-    title,
-    source,
-    url,
-    language,
-    article_text
-):
+def save_article(db, title, source, url, language, article_text, published_date=""):
 
     if article_exists(db, url):
 
@@ -50,7 +44,7 @@ def save_article(
 
         language=language,
 
-        published_date="",
+        published_date=published_date,
 
         article_text=article_text,
 
@@ -69,6 +63,13 @@ def save_article(
 def extract_article(url):
 
     try:
+        try:
+            article = Article(url)
+            article.download()
+            article.parse()
+            pub_date = str(article.publish_date) if article.publish_date else ""
+        except:
+            pub_date = ""
 
         response = requests.get(
             url,
@@ -84,12 +85,8 @@ def extract_article(url):
             "html.parser"
         )
 
-        title = ""
-
-        if soup.title:
-            title = soup.title.get_text(
-                strip=True
-            )
+        h1 = soup.find("h1")
+        title = h1.get_text(strip=True) if h1 else (soup.title.get_text(strip=True) if soup.title else "")
 
         article_text = ""
 
@@ -145,13 +142,18 @@ def extract_article(url):
         except:
 
             language = "unknown"
+            
+        if not pub_date:
+            time_tag = soup.find("time")
+            if time_tag: pub_date = time_tag.get_text(strip=True)
 
         return {
 
             "title": title,
             "url": url,
             "language": language,
-            "article_text": article_text
+            "article_text": article_text,
+            "published_date": pub_date
 
         }
 
@@ -241,7 +243,9 @@ def main():
 
                 language=article["language"],
 
-                article_text=article["article_text"]
+                article_text=article["article_text"],
+
+                published_date=article.get("published_date", "")
 
             )
 

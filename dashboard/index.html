@@ -79,16 +79,26 @@
                 </div>
             </header>
 
+            <!-- Global Filters Area -->
+            <div class="filters-bar" style="margin-bottom: 20px;">
+                <select id="filter-date">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="all">All Time</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+                <div id="custom-date-fields" style="display: none; gap: 8px; align-items: center;">
+                    <input type="date" id="filter-start-date" class="btn-filter" style="background: var(--card-glass); color: var(--text-white); border: 1px solid var(--border-glass);">
+                    <span>to</span>
+                    <input type="date" id="filter-end-date" class="btn-filter" style="background: var(--card-glass); color: var(--text-white); border: 1px solid var(--border-glass);">
+                </div>
+                <select id="filter-category"><option>All Categories</option><option>Cyber Fraud</option><option>Theft</option><option>Murder</option></select>
+                <select id="filter-location"><option>All Locations</option><option>Nayagarh Town</option><option>Ranpur</option></select>
+                <button class="btn-filter" id="btn-apply-filters"><i class="fas fa-filter"></i> Apply Filters</button>
+            </div>
+
             <!-- Main Grid Sections -->
             <div id="view-dashboard" class="view-section active">
-            
-                <!-- Filters Area -->
-                <div class="filters-bar">
-                    <select id="filter-date"><option>Last 7 Days</option><option>Last 30 Days</option><option>All Time</option></select>
-                    <select id="filter-category"><option>All Categories</option><option>Cyber Fraud</option><option>Theft</option><option>Murder</option></select>
-                    <select id="filter-location"><option>All Locations</option><option>Nayagarh Town</option><option>Ranpur</option></select>
-                    <button class="btn-filter"><i class="fas fa-filter"></i> Apply Filters</button>
-                </div>
                 
                 <!-- KPI Cards -->
                 <div class="kpi-grid">
@@ -294,7 +304,7 @@
                     <div class="panel-header"><h2><i class="fas fa-brain"></i> Sentiment Analysis Results</h2></div>
                     <div class="table-responsive">
                         <table class="data-table" id="table-analysis">
-                            <thead><tr><th>ID</th><th>Article Title</th><th>Source</th><th>Sentiment</th><th>Confidence</th><th>Analyzed At</th></tr></thead>
+                            <thead><tr><th>ID</th><th>Article Title</th><th>Source</th><th>Sentiment</th><th>Severity</th><th>Priority (CPI)</th><th>Confidence</th><th>Analyzed At</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>

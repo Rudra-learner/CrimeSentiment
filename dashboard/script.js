@@ -24,9 +24,30 @@ updateClock();
 
 // --- DATA FETCHING & UI UPDATES ---
 
+function getFilterQueryString() {
+    const filterDate = document.getElementById('filter-date');
+    if(!filterDate) return "";
+    const val = filterDate.value;
+    if(val === 'all') return "";
+    
+    let params = new URLSearchParams();
+    if(val === '7') params.append('days', 7);
+    else if(val === '30') params.append('days', 30);
+    else if(val === 'custom') {
+        const start = document.getElementById('filter-start-date').value;
+        const end = document.getElementById('filter-end-date').value;
+        if(start) params.append('start_date', start);
+        if(end) params.append('end_date', end);
+    }
+    const q = params.toString();
+    return q ? '?' + q : '';
+}
+
 async function fetchAPI(endpoint) {
     try {
-        const res = await fetch(`/api/dashboard/${endpoint}`);
+        const query = getFilterQueryString();
+        const separator = endpoint.includes('?') ? (query ? '&' + query.substring(1) : '') : query;
+        const res = await fetch(`/api/dashboard/${endpoint}${separator}`);
         if(!res.ok) throw new Error("API Error");
         return await res.json();
     } catch (e) {
@@ -421,20 +442,27 @@ async function loadTableData(endpoint, tableId, rowMapper, viewId) {
 
 const viewsConfig = {
     'view-news-collection': () => loadTableData('table/raw-articles', 'table-raw-articles', item => `
-        <tr><td>${item.id}</td><td>${item.title || 'N/A'}</td><td>${item.source || 'N/A'}</td><td>${item.date || 'N/A'}</td><td>${item.collected_at || ''}</td></tr>`, 'view-news-collection'),
+        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td><td>${item.date || 'N/A'}</td><td>${item.collected_at || ''}</td></tr>`, 'view-news-collection'),
     'view-crime-analytics': () => loadTableData('table/processed-articles', 'table-processed-articles', item => `
-        <tr><td>${item.id}</td><td>${item.title || 'N/A'}</td><td>${item.source || 'N/A'}</td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.status || 'N/A'}</td><td>${item.processed_at || ''}</td></tr>`, 'view-crime-analytics'),
+        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.status || 'N/A'}</td><td>${item.processed_at || ''}</td></tr>`, 'view-crime-analytics'),
     'view-news-events': () => loadTableData('table/news-events', 'table-events', item => `
-        <tr><td>${item.id}</td><td>${item.title || 'N/A'}</td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.created_at || ''}</td></tr>`, 'view-news-events'),
+        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.created_at || ''}</td></tr>`, 'view-news-events'),
     'view-sentiment-analysis': () => loadTableData('table/analysis-results', 'table-analysis', item => {
         const sent = item.sentiment || 'Neutral';
         const sentClass = sent.toLowerCase() === 'positive' ? 'positive' : sent.toLowerCase() === 'negative' ? 'negative' : '';
-        return `<tr><td>${item.id}</td><td>${item.article_title || 'N/A'}</td><td>${item.source || 'N/A'}</td>
+        const severity = item.severity_score !== undefined ? item.severity_score : 3;
+        const cpi = item.cpi || 'Low';
+        let cpiColor = '#10b981'; // Green for Low
+        if (cpi === 'Very High' || cpi === 'High') cpiColor = '#ef4444'; // Red
+        else if (cpi === 'Medium') cpiColor = '#f59e0b'; // Yellow/Orange
+        return `<tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.article_title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td>
         <td><span class="tag sentiment ${sentClass}">${sent}</span></td>
+        <td>${severity}</td>
+        <td><span class="tag" style="background-color: transparent; border: 1px solid ${cpiColor}; color: ${cpiColor};">${cpi}</span></td>
         <td>${item.confidence ? item.confidence.toFixed(2) : 'N/A'}</td><td>${item.analyzed_at || ''}</td></tr>`;
     }, 'view-sentiment-analysis'),
     'view-officer-analytics': () => loadTableData('table/officer-mentions', 'table-officer-mentions', item => `
-        <tr><td>${item.id}</td><td>${item.officer_name || 'N/A'}</td><td>${item.designation || 'N/A'}</td><td>${item.police_station || 'N/A'}</td></tr>`, 'view-officer-analytics')
+        <tr><td>${item.id}</td><td>${item.officer_name || 'N/A'} <a href="${item.url}" target="_blank" style="color:#00e5ff; margin-left:8px;" title="View Article"><i class="fas fa-external-link-alt"></i></a></td><td>${item.designation || 'N/A'}</td><td>${item.police_station || 'N/A'}</td></tr>`, 'view-officer-analytics')
 };
 
 function switchView(targetId) {
@@ -456,6 +484,31 @@ function switchView(targetId) {
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     refreshDashboard();
+    
+    // Global Filters Logic
+    const filterDate = document.getElementById('filter-date');
+    const customDateFields = document.getElementById('custom-date-fields');
+    if (filterDate) {
+        filterDate.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customDateFields.style.display = 'flex';
+            } else {
+                customDateFields.style.display = 'none';
+            }
+        });
+    }
+    
+    const btnApplyFilters = document.getElementById('btn-apply-filters');
+    if (btnApplyFilters) {
+        btnApplyFilters.addEventListener('click', () => {
+            const activeView = document.querySelector('.view-section.active');
+            if (activeView && activeView.id === 'view-dashboard') {
+                refreshDashboard();
+            } else if (activeView && viewsConfig[activeView.id]) {
+                viewsConfig[activeView.id]();
+            }
+        });
+    }
     
     // Sidebar Toggle Logic
     const toggleBtn = document.getElementById('sidebar-toggle');

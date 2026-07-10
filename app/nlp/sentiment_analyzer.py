@@ -57,6 +57,28 @@ class SentimentAnalyzer:
 
         return sentiment, confidence
 
+    def determine_severity_and_cpi(self, crime_category):
+        category = (crime_category or "").lower()
+        
+        if "murder" in category:
+            return 10, "Very High"
+        elif "kidnapping" in category or "rape" in category:
+            return 9, "Very High"
+        elif "arms" in category:
+            return 8, "High"
+        elif "drug" in category:
+            return 7, "High"
+        elif "assault" in category or "robbery" in category:
+            return 6, "Medium"
+        elif "cyber" in category: # cyber fraud
+            return 5, "Medium"
+        elif "theft" in category:
+            return 4, "Low"
+        elif "fraud" in category:
+            return 3, "Low"
+        else:
+            return 3, "Low"
+
     def article_already_analyzed(self, article_id):
         article = (
             self.db.query(AnalysisResult)
@@ -66,7 +88,7 @@ class SentimentAnalyzer:
 
         return article is not None
 
-    def save_analysis_result(self, article, sentiment, confidence):
+    def save_analysis_result(self, article, sentiment, confidence, severity_score, cpi):
 
         result = AnalysisResult(
 
@@ -81,6 +103,10 @@ class SentimentAnalyzer:
         url=article.url,
 
         sentiment=sentiment,
+
+        severity_score=severity_score,
+
+        crime_priority_index=cpi,
 
         confidence=confidence
 
@@ -108,10 +134,19 @@ class SentimentAnalyzer:
             print("Empty Article.")
             return
 
-        print(f"Sentiment : {sentiment}")
+        severity_score, cpi = self.determine_severity_and_cpi(article.crime_category)
+
+        # Override sentiment based on case status
+        status = (article.case_status or "").lower()
+        if "solved" in status or "arrest" in status:
+            sentiment = "Positive"
+        elif "unsolved" in status or "ongoing" in status or "investigation" in status:
+            sentiment = "Negative"
+
+        print(f"Sentiment : {sentiment} (Severity: {severity_score}, CPI: {cpi})")
         print(f"Confidence : {confidence:.2f}%")
 
-        self.save_analysis_result(article, sentiment, confidence)
+        self.save_analysis_result(article, sentiment, confidence, severity_score, cpi)
 
     def process_all_articles(self):
         articles = (

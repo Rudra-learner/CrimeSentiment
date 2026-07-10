@@ -3,6 +3,7 @@ import re
 import time
 
 from bs4 import BeautifulSoup
+from newspaper import Article
 from datetime import datetime
 from langdetect import detect
 
@@ -112,7 +113,8 @@ def save_article(
     source,
     url,
     language,
-    article_text
+    article_text,
+    published_date=""
 ):
 
     if article_exists(db, url):
@@ -127,7 +129,7 @@ def save_article(
         url=url,
 
         language=language,
-        published_date="",
+        published_date=published_date,
 
         article_text=article_text,
 
@@ -144,119 +146,50 @@ def save_article(
 
 
 def extract_article(url):
-
     try:
-
-        response = requests.get(
-            url,
-            headers=HEADERS,
-            timeout=20
-        )
-
-        if response.status_code != 200:
-            return None
-
-        soup = BeautifulSoup(
-            response.text,
-            "html.parser"
-        )
-
-        title = ""
-
-        h1 = soup.find("h1")
-
-        if h1:
-
-            title = h1.get_text(
-                strip=True
-            )
-
-        elif soup.title:
-
-            title = soup.title.get_text(
-                strip=True
-            )
-
-        article_text = ""
-
-        selectors = [
-
-            "article",
-            '[class*="content"]',
-            '[class*="story"]',
-            '[class*="article"]',
-            '[class*="detail"]',
-            '[class*="news"]'
-
-        ]
-
-        for selector in selectors:
-
-            for tag in soup.select(selector):
-
-                text = tag.get_text(
-                    separator=" ",
-                    strip=True
-                )
-
-                if len(text) > len(article_text):
-                    article_text = text
-
-        footer_markers = [
-
-            "by Kanak Digital Desk",
-            "Link copied!",
-            "Copy failed!",
-            "Follow us:",
-            "Powered by",
-            "Subscribe to our Newsletter!",
-            "Join and get latest news updates delivered to you via social media"
-        ]
-
+        article = Article(url)
+        article.download()
+        article.parse()
+        pub_date = str(article.publish_date) if article.publish_date else ""
+            
+        response = requests.get(url, headers=HEADERS, timeout=20)
+        if response.status_code != 200: return None
+        soup = BeautifulSoup(response.text, "html.parser")
+        
+        title = article.title if article.title else ""
+        if not title:
+            h1 = soup.find("h1")
+            if h1: title = h1.get_text(strip=True)
+            elif soup.title: title = soup.title.get_text(strip=True)
+        
+        article_text = article.text if article.text else ""
+        if not article_text:
+            selectors = ["article", "[class*=\"content\"]", "[class*=\"story\"]", "[class*=\"article\"]", "[class*=\"detail\"]", "[class*=\"news\"]"]
+            for selector in selectors:
+                for tag in soup.select(selector):
+                    text = tag.get_text(separator=" ", strip=True)
+                    if len(text) > len(article_text): article_text = text
+                
+        footer_markers = ["by Kanak Digital Desk", "Link copied!", "Copy failed!", "Follow us:", "Powered by", "Subscribe to our Newsletter!", "Join and get latest news updates delivered to you via social media"]
         for marker in footer_markers:
-
-            if marker in article_text:
-
-                article_text = article_text.split(
-                    marker
-                )[0]
-
-        article_text = article_text.replace(
-            "Advertisment",
-            ""
-        )
-
-        article_text = article_text.replace(
-            "Crime Photograph: (Kanak News)",
-            ""
-        )
-
-        article_text = re.sub(
-            r"\s+",
-            " ",
-            article_text
-        ).strip()
-
-        if len(article_text) < 200:
-            return None
-
+            if marker in article_text: article_text = article_text.split(marker)[0]
+            
+        article_text = article_text.replace("Advertisment", "")
+        article_text = article_text.replace("Crime Photograph: (Kanak News)", "")
+        
+        import re
+        article_text = re.sub(r"\s+", " ", article_text).strip()
+        
+        if len(article_text) < 200: return None
+        
         try:
             language = detect(article_text)
-
         except:
             language = "unknown"
-
-        return {
-
-            "title": title,
-            "url": url,
-            "language": language,
-            "article_text": article_text
-
-        }
+            
+        return {"title": title, "url": url, "language": language, "article_text": article_text, "published_date": pub_date}
 
     except Exception as e:
-
         print("Extraction Error:", e)
         return None
 
@@ -351,7 +284,8 @@ def main():
 
                     language=article["language"],
 
-                    article_text=article["article_text"]
+                    article_text=article["article_text"],
+                    published_date=article.get("published_date", "")
 
                 )
 

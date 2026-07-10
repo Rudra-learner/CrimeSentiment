@@ -88,11 +88,12 @@ def extract_article(article_url):
 
         title = article.title
         text = article.text
+        pub_date = str(article.publish_date) if article.publish_date else ""
 
         if len(text.strip()) < 100:
-            return None, None
+            return None, None, ""
 
-        return title, text
+        return title, text, pub_date
 
     except Exception as e:
 
@@ -124,9 +125,9 @@ def extract_article(article_url):
             )
 
             if len(text.strip()) < 100:
-                return None, None
+                return None, None, ""
 
-            return title, text
+            return title, text, ""
 
         except Exception as e2:
 
@@ -134,7 +135,7 @@ def extract_article(article_url):
                 f"Fallback Extraction Error: {e2}"
             )
 
-            return None, None
+            return None, None, ""
 
 
 def collect_articles():
@@ -193,7 +194,7 @@ def collect_articles():
                 if article_exists(db, href):
                     continue
 
-                title, article_text = extract_article(
+                title, article_text, published_date = extract_article(
                     href
                 )
 
@@ -215,9 +216,7 @@ def collect_articles():
                     source="Pragativadi",
                     url=href,
                     language="en",
-                    published_date=str(
-                        datetime.utcnow()
-                    ),
+                    published_date=published_date,
                     article_text=article_text
                 )
 

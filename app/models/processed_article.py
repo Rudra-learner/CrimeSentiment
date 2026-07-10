@@ -73,6 +73,11 @@ class ProcessedArticle(Base):
         DateTime,
         default=datetime.utcnow
     )
+    
+    published_date = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
 
     news_event_id = Column(
     Integer,

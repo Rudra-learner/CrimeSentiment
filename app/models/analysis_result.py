@@ -42,6 +42,16 @@ class AnalysisResult(Base):
         String(20)
     )
 
+    severity_score = Column(
+        Integer,
+        default=3
+    )
+
+    crime_priority_index = Column(
+        String(20),
+        default="Low"
+    )
+
     confidence = Column(
         Float
     )

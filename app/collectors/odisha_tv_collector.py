@@ -83,6 +83,18 @@ def extract_article(url):
             published_date = str(
                 news.publish_date
             )
+            
+        if not published_date:
+            try:
+                res = requests.get(url, headers=HEADERS, timeout=10)
+                soup = BeautifulSoup(res.text, "html.parser")
+                for time_tag in soup.find_all("time"):
+                    text = time_tag.get_text(strip=True)
+                    if text:
+                        published_date = text
+                        break
+            except:
+                pass
 
         try:
 

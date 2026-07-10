@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil import parser
 
 from app.database.database import SessionLocal
 from app.models.article import RawArticle
@@ -82,6 +83,17 @@ def preprocess_articles():
                 print("Duplicate Article Skipped")
                 continue
 
+            # Parse published date
+            parsed_pub_date = article.collected_at or datetime.utcnow()
+            if article.published_date:
+                try:
+                    parsed_pub_date = parser.parse(article.published_date)
+                    # If naive, make it UTC-like or just leave as naive, since collected_at is naive UTC
+                    if parsed_pub_date.tzinfo is not None:
+                        parsed_pub_date = parsed_pub_date.replace(tzinfo=None)
+                except Exception:
+                    pass
+
             processed_article = ProcessedArticle(
                 raw_article_id=article.id,
                 title=article.title,
@@ -94,7 +106,8 @@ def preprocess_articles():
                 location=location,
                 police_mentioned=police,
                 case_status=case_status,
-                processed_at=datetime.utcnow()
+                processed_at=datetime.utcnow(),
+                published_date=parsed_pub_date
             )
 
             db.add(processed_article)
