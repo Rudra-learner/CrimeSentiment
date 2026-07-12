@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
     <div class="dashboard-container">
@@ -94,6 +94,12 @@
                 </div>
                 <select id="filter-category"><option>All Categories</option><option>Cyber Fraud</option><option>Theft</option><option>Murder</option></select>
                 <select id="filter-location"><option>All Locations</option><option>Nayagarh Town</option><option>Ranpur</option></select>
+                <select id="filter-priority">
+                    <option value="all">All Priorities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
                 <button class="btn-filter" id="btn-apply-filters"><i class="fas fa-filter"></i> Apply Filters</button>
             </div>
 
@@ -114,7 +120,7 @@
                     <div class="kpi-card glass"><div class="kpi-icon purple"><i class="fas fa-user-lock"></i></div><div class="kpi-data"><h3>Arrested Cases</h3><p id="kpi-arrested">0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon yellow"><i class="fas fa-search"></i></div><div class="kpi-data"><h3>Under Investigation</h3><p id="kpi-investigation">0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon teal"><i class="fas fa-bullhorn"></i></div><div class="kpi-data"><h3>Police Mentioned</h3><p id="kpi-police-mentioned">0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-police"><i class="fas fa-smile"></i></div><div class="kpi-data"><h3>Avg Police Sentiment</h3><p id="kpi-avg-police-sent">0.0</p></div></div>
+                    <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-crime"><i class="fas fa-smile"></i></div><div class="kpi-data"><h3>Avg Crime Sentiment</h3><p id="kpi-avg-crime-sent">0.0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-officer"><i class="fas fa-user-shield"></i></div><div class="kpi-data"><h3>Avg Officer Sentiment</h3><p id="kpi-avg-officer-sent">0.0</p></div></div>
                 </div>
                 
@@ -192,7 +198,7 @@
                                 <i class="fas fa-chart-bar"></i>
                                 <div class="text">
                                     <h4>Sentiment Improvement</h4>
-                                    <p>Police sentiment improved by 12% following recent cyber cell actions.</p>
+                                    <p>Crime sentiment improved by 12% following recent cyber cell actions.</p>
                                 </div>
                             </div>
                         </div>
@@ -234,7 +240,7 @@
                     <!-- Police Dept Sentiment & Case Status -->
                     <div class="panel glass dual-charts">
                         <div class="chart-box">
-                            <h2><i class="fas fa-heartbeat"></i> Police Sentiment</h2>
+                            <h2><i class="fas fa-heartbeat"></i> Crime Sentiment</h2>
                             <canvas id="chart-police-sentiment"></canvas>
                         </div>
                         <div class="chart-box">
@@ -342,6 +348,6 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>

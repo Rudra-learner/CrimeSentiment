@@ -25,20 +25,26 @@ updateClock();
 // --- DATA FETCHING & UI UPDATES ---
 
 function getFilterQueryString() {
-    const filterDate = document.getElementById('filter-date');
-    if(!filterDate) return "";
-    const val = filterDate.value;
-    if(val === 'all') return "";
-    
     let params = new URLSearchParams();
-    if(val === '7') params.append('days', 7);
-    else if(val === '30') params.append('days', 30);
-    else if(val === 'custom') {
-        const start = document.getElementById('filter-start-date').value;
-        const end = document.getElementById('filter-end-date').value;
-        if(start) params.append('start_date', start);
-        if(end) params.append('end_date', end);
+    
+    const filterDate = document.getElementById('filter-date');
+    if(filterDate) {
+        const val = filterDate.value;
+        if(val === '7') params.append('days', 7);
+        else if(val === '30') params.append('days', 30);
+        else if(val === 'custom') {
+            const start = document.getElementById('filter-start-date').value;
+            const end = document.getElementById('filter-end-date').value;
+            if(start) params.append('start_date', start);
+            if(end) params.append('end_date', end);
+        }
     }
+    
+    const filterPriority = document.getElementById('filter-priority');
+    if(filterPriority && filterPriority.value !== 'all') {
+        params.append('priority', filterPriority.value);
+    }
+    
     const q = params.toString();
     return q ? '?' + q : '';
 }
@@ -70,9 +76,9 @@ async function updateKPIs() {
     document.getElementById('kpi-investigation').innerText = data.UnderInvestigation;
     document.getElementById('kpi-police-mentioned').innerText = data.PoliceMentioned;
     
-    document.getElementById('kpi-avg-police-sent').innerText = data.AvgPoliceSentiment;
-    const pIcon = document.getElementById('icon-sentiment-police');
-    pIcon.className = 'kpi-icon ' + (data.AvgPoliceSentiment > 0 ? 'green' : data.AvgPoliceSentiment < 0 ? 'red' : 'yellow');
+    document.getElementById('kpi-avg-crime-sent').innerText = data.AvgCrimeSentiment;
+    const pIcon = document.getElementById('icon-sentiment-crime');
+    pIcon.className = 'kpi-icon ' + (data.AvgCrimeSentiment > 0 ? 'green' : data.AvgCrimeSentiment < 0 ? 'red' : 'yellow');
     
     document.getElementById('kpi-avg-officer-sent').innerText = data.AvgOfficerSentiment;
     const oIcon = document.getElementById('icon-sentiment-officer');

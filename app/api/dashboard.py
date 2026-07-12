@@ -42,7 +42,7 @@ def apply_date_filter(query, model_col, days: int = None, start_date: str = None
     return query
 
 @router.get("/kpi")
-def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None):
+def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None, priority: str = None):
     total_raw = db.query(RawArticle).count()
     
     q_pa = db.query(ProcessedArticle)
@@ -64,6 +64,8 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
     # Sentiments - joining ProcessedArticle to filter by date
     q_analysis = db.query(AnalysisResult).join(ProcessedArticle)
     q_analysis = apply_date_filter(q_analysis, ProcessedArticle.published_date, days, start_date, end_date)
+    if priority and priority.lower() != 'all':
+        q_analysis = q_analysis.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
     analysis = q_analysis.all()
     
     if analysis:
@@ -90,7 +92,7 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
         "ArrestedCases": arrested_cases,
         "UnderInvestigation": under_investigation,
         "PoliceMentioned": police_mentioned,
-        "AvgPoliceSentiment": round(avg_sentiment, 2),
+        "AvgCrimeSentiment": round(avg_sentiment, 2),
         "AvgOfficerSentiment": round(avg_officer_sentiment, 2)
     }
 
@@ -235,9 +237,11 @@ def get_officer_analytics(db: Session = Depends(get_db), days: int = None, start
     return result
 
 @router.get("/police-sentiment")
-def get_police_sentiment(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None):
+def get_police_sentiment(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None, priority: str = None):
     q = db.query(AnalysisResult).join(ProcessedArticle)
     q = apply_date_filter(q, ProcessedArticle.published_date, days, start_date, end_date)
+    if priority and priority.lower() != 'all':
+        q = q.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
     analysis = q.all()
     
     pos = sum(1 for a in analysis if a.sentiment and a.sentiment.lower() == 'positive')
@@ -320,9 +324,11 @@ def get_news_events_table(page: int = 1, limit: int = 25, days: int = None, star
     return {"data": data, "total": total, "page": page, "limit": limit}
 
 @router.get("/table/analysis-results")
-def get_analysis_results_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, db: Session = Depends(get_db)):
+def get_analysis_results_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, priority: str = None, db: Session = Depends(get_db)):
     q = db.query(AnalysisResult).join(ProcessedArticle)
     q = apply_date_filter(q, ProcessedArticle.published_date, days, start_date, end_date)
+    if priority and priority.lower() != 'all':
+        q = q.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
     total = q.count()
     offset = (page - 1) * limit
     results = q.order_by(desc(AnalysisResult.severity_score), asc(AnalysisResult.id)).offset(offset).limit(limit).all()
