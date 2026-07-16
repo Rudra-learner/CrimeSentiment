@@ -8,16 +8,12 @@ from app.models.article import RawArticle
 
 
 SEARCH_TERMS = [
-    "nayagarh murder",
-    "nayagarh crime",
-    "nayagarh police",
-    "nayagarh theft",
-    "nayagarh robbery",
-    "nayagarh cyber fraud",
-    "nayagarh arrest",
-    "nayagarh rape",
-    "nayagarh missing",
-    "nayagarh accident"
+    "odisha",
+    "bhubaneswar",
+    "cuttack",
+    "police",
+    "crime",
+    "government"
 ]
 
 BASE_SEARCH_URL = "https://pragativadi.com/?s="
@@ -201,14 +197,7 @@ def collect_articles():
                 if not title:
                     continue
 
-                combined_text = (
-                    title.lower() +
-                    " " +
-                    article_text.lower()
-                )
 
-                if "nayagarh" not in combined_text:
-                    continue
 
                 save_article(
                     db=db,

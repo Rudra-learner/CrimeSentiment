@@ -24,26 +24,7 @@ BASE_URLS = [
 ]
 
 
-NAYAGARH_KEYWORDS = [
 
-    "nayagarh",
-    "ranpur",
-    "daspalla",
-    "odagaon",
-    "khandapada",
-    "gania",
-    "bhapur",
-    "fategarh",
-
-    "nuagaon",
-    "sarankul",
-    "kantilo",
-    "itamati",
-    "banigochha",
-    "rajasunakhala",
-
-    "nayagarh police"
-]
 
 
 def article_exists(db, url):
@@ -56,20 +37,7 @@ def article_exists(db, url):
     )
 
 
-def is_nayagarh_related(title, article_text):
 
-    text = (
-        (title or "") +
-        " " +
-        (article_text or "")
-    ).lower()
-
-    for keyword in NAYAGARH_KEYWORDS:
-
-        if keyword.lower() in text:
-            return True
-
-    return False
 
 
 def save_article(db, title, source, url, language, article_text, published_date=""):
@@ -316,19 +284,7 @@ def main():
             if not article:
                 continue
 
-            if not is_nayagarh_related(
 
-                article["title"],
-                article["article_text"]
-
-            ):
-
-                print(
-                    "Skipped Non-Nayagarh:",
-                    article["title"]
-                )
-
-                continue
 
             saved = save_article(
                 db=db,

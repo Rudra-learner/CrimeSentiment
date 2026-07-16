@@ -18,66 +18,13 @@ HEADERS = {
 BASE_SEARCH_URL = "https://kanaknews.com/search?title="
 
 SEARCH_TERMS = [
-
-    "ନୟାଗଡ଼",
-    "ରଣପୁର",
-    "ଦଶପଲ୍ଲା",
-    "ଓଡ଼ଗାଁ",
-    "ଖଣ୍ଡପଡା",
-    "ଗଣିଆ",
-    "ଭାପୁର",
-    "ଫତେଗଡ଼",
-
-    "ନୟାଗଡ଼ ପୋଲିସ",
-
-    "ନୂଆଗାଁ",
-    "ସରାଙ୍କୁଳ",
-    "କଣ୍ଟିଲୋ",
-    "ଇଟାମାଟି",
-    "ରାଜସୁନାଖଳା",
-
-    "ହତ୍ୟା",
-    "ଚୋରି",
-    "ଡକାୟତି",
-    "ଗିରଫ",
-    "ଅପରାଧ",
-    "ହତ୍ୟାକାଣ୍ଡ",
-    "ଲୁଟ",
-    "ବ୍ରାଉନସୁଗାର",
-    "ଗଞ୍ଜେଇ",
-    "ସାଇବର ଠକେଇ"
-
-]
-
-
-NAYAGARH_KEYWORDS = [
-
-    "nayagarh",
-    "ନୟାଗଡ଼",
-
-    "ranpur",
-    "ରଣପୁର",
-
-    "daspalla",
-    "ଦଶପଲ୍ଲା",
-
-    "odagaon",
-    "ଓଡ଼ଗାଁ",
-
-    "khandapada",
-    "ଖଣ୍ଡପଡା",
-
-    "gania",
-    "ଗଣିଆ",
-
-    "bhapur",
-    "ଭାପୁର",
-
-    "fategarh",
-    "ଫତେଗଡ଼",
-
-    "nayagarh police",
-    "ନୟାଗଡ଼ ପୋଲିସ"
+    "ଓଡ଼ିଶା",
+    "Odisha",
+    "Bhubaneswar",
+    "Cuttack",
+    "Police",
+    "Crime",
+    "Government"
 ]
 
 
@@ -91,20 +38,7 @@ def article_exists(db, url):
     )
 
 
-def is_nayagarh_related(title, article_text):
 
-    text = (
-        (title or "") +
-        " " +
-        (article_text or "")
-    ).lower()
-
-    for keyword in NAYAGARH_KEYWORDS:
-
-        if keyword.lower() in text:
-            return True
-
-    return False
 
 
 def save_article(
@@ -258,19 +192,7 @@ def main():
                 if not article:
                     continue
 
-                if not is_nayagarh_related(
 
-                    article["title"],
-                    article["article_text"]
-
-                ):
-
-                    print(
-                        "Skipped Non-Nayagarh:",
-                        article["title"]
-                    )
-
-                    continue
 
                 saved = save_article(
 
