@@ -1,83 +1,38 @@
-LOCATIONS = [
-
-    "nayagarh",
-    "ନୟାଗଡ଼",
-    "ranpur",
-    "ରଣପୁର",
-    "sarankul",
-    "ସରାଙ୍କୁଳ",
-    "odagaon",
-    "ଓଡ଼ଗାଁ",
-    "daspalla",
-    "ଦଶପଲ୍ଲା",
-    "nuagaon",
-    "khandapada",
-    "ଖଣ୍ଡପଡା",
-    "gania",
-    "ଗଣିଆ",
-    "bhapur",
-    "ଭାପୁର",
-    "fategarh",
-    "banigochha",
-    "ବାଣିଗୋଛା",
-    "kantilo",
-    "କଣ୍ଟିଲୋ",
-    "itamati",
-    "fategarh police",
-    "nayagarh police"
-]
-
-POLICE_STATION_MAPPING = {
-
-    "Odagaon Police Station": "Nayagarh",
-
-    "Sarankul Police Station": "Nayagarh",
-
-    "Ranpur Police Station": "Nayagarh",
-
-    "Nuagaon Police Station": "Nayagarh",
-
-    "Daspalla Police Station": "Nayagarh",
-
-    "Fategarh Police Station": "Nayagarh",
-
-    "Khandapada Police Station": "Nayagarh",
-
-    "Itamati Police Station": "Nayagarh"
-
-}
+from app.preprocessors.odisha_gazetteer import ODISHA_LOCATIONS
 
 
 def detect_location(text):
+    """
+    Detect the Odisha district from the article.
 
-    text_lower = text.lower()
+    Returns:
+        str : District name
+        or "Unknown"
+    """
 
-    scores = {}
+    text = text.lower()
 
-    for location in LOCATIONS:
+    best_district = "Unknown"
+    max_score = 0
 
-        count = text_lower.count(location.lower())
+    for district, locations in ODISHA_LOCATIONS.items():
 
-        if count > 0:
+        score = 0
 
-            scores[location] = count
+        # Match district name
+        if district.lower() in text:
+            score += text.count(district.lower())
 
-    if not scores:
+        # Match every English/Odia synonym
+        for location_group in locations:
 
-        return "Unknown"
+            for name in location_group:
 
-    best_location = max(
+                if name.lower() in text:
+                    score += text.count(name.lower())
 
-    scores,
+        if score > max_score:
+            max_score = score
+            best_district = district
 
-    key=scores.get
-
-)
-
-    return POLICE_STATION_MAPPING.get(
-
-    best_location,
-
-    best_location
-
-)
+    return best_district

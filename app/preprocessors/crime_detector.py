@@ -1,226 +1,125 @@
-CRIME_KEYWORDS = {
+from app.preprocessors.macro_micro_crimes import (
+    MACRO_CRIMES,
+    MICRO_CRIMES
+)
 
-    "MURDER": [
 
-        # English
-        "murder",
-        "killed",
-        "homicide",
-        "slain",
-        "dead body",
-        "body recovered",
-        "body found",
-        "hacked to death",
-        "shot dead",
-        "strangled",
-        "death mystery",
+def normalize_text(text):
+    """
+    Normalize text for matching.
+    """
+    return " ".join(text.lower().split())
 
-        # Odia
-        "ହତ୍ୟା",
-        "ହତ୍ୟାକାଣ୍ଡ",
-        "ଖୁନ",
-        "ମୃତଦେହ",
-        "ଶବ",
-        "ଶବ ଉଦ୍ଧାର",
-        "ହତ"
-    ],
 
-    "THEFT": [
+def calculate_score(text, keywords):
+    """
+    Calculate weighted score for a list of keywords.
 
-        "theft",
-        "stolen",
-        "steal",
-        "thief",
-        "burglary",
-        "house break",
-        "housebreaking",
+    Weighting:
+        Single-word keyword  -> 1
+        Two-word phrase      -> 2
+        Three+ word phrase   -> 3
+    """
 
-        "ଚୋରି",
-        "ଚୋର",
-        "ଚୋରାଇ",
-        "ଘର ଭାଙ୍ଗି"
-    ],
+    score = 0
 
-    "ROBBERY": [
+    for keyword in keywords:
 
-        "robbery",
-        "robbed",
-        "loot",
-        "looted",
-        "snatching",
-        "dacoity",
+        keyword = keyword.lower().strip()
 
-        "ଲୁଟ",
-        "ଲୁଟପାଟ",
-        "ଡକାୟତି",
-        "ଛିନତାଇ"
-    ],
+        if keyword in text:
 
-    "CYBER_FRAUD": [
+            words = len(keyword.split())
 
-        "cyber fraud",
-        "cyber crime",
-        "online fraud",
-        "online scam",
-        "upi fraud",
-        "atm fraud",
-        "otp fraud",
-        "digital arrest",
-        "money mule",
-        "phishing",
-        "hacking",
+            if words >= 3:
+                score += 3
 
-        "ସାଇବର",
-        "ସାଇବର ଠକେଇ",
-        "ଅନଲାଇନ ଠକେଇ",
-        "ୟୁପିଆଇ",
-        "ଏଟିଏମ ଠକେଇ"
-    ],
+            elif words == 2:
+                score += 2
 
-    "FRAUD": [
+            else:
+                score += 1
 
-        "fraud",
-        "cheating",
-        "cheated",
-        "forgery",
-        "scam",
+    return score
 
-        "ଠକେଇ",
-        "ପ୍ରତାରଣା",
-        "ଜାଲିଆତି"
-    ],
 
-    "KIDNAPPING": [
+def detect_macro_crime(text):
+    """
+    Detect the most likely macro crime.
+    """
 
-        "kidnap",
-        "kidnapped",
-        "abduction",
-        "abducted",
-        "missing child",
-
-        "ଅପହରଣ",
-        "ନିଖୋଜ"
-    ],
-
-    "RAPE": [
-
-        "rape",
-        "sexual assault",
-        "sexual abuse",
-        "molestation",
-
-        "ଦୁଷ୍କର୍ମ",
-        "ବଳାତ୍କାର",
-        "ଯୌନ ଉତ୍ପୀଡନ"
-    ],
-
-    "ASSAULT": [
-
-        "attack",
-        "assault",
-        "beaten",
-        "stabbed",
-        "injured",
-        "violence",
-
-        "ଆକ୍ରମଣ",
-        "ମାଡ଼",
-        "ଛୁରିମାଡ଼",
-        "ଆହତ"
-    ],
-
-    "DRUG": [
-
-        "ganja",
-        "brown sugar",
-        "drug",
-        "narcotics",
-        "drug peddler",
-
-        "ଗଞ୍ଜେଇ",
-        "ବ୍ରାଉନ ସୁଗର",
-        "ମାଦକ"
-    ],
-
-    "ARMS": [
-
-        "gun",
-        "pistol",
-        "firearm",
-        "rifle",
-        "weapon",
-        "illegal weapon",
-
-        "ବନ୍ଧୁକ",
-        "ପିସ୍ତଲ",
-        "ଅସ୍ତ୍ର"
-    ],
-
-    "ACCIDENT": [
-
-        "accident",
-        "road accident",
-        "collision",
-        "electrocution",
-        "crash",
-
-        "ଦୁର୍ଘଟଣା",
-        "ବିଦ୍ୟୁତ ଆଘାତ",
-        "ସଡ଼କ ଦୁର୍ଘଟଣା"
-    ],
-
-    "SUICIDE": [
-
-        "suicide",
-        "attempted suicide",
-        "self immolation",
-        "hanged",
-        "consumed poison",
-
-        "ଆତ୍ମହତ୍ୟା",
-        "ଫାଶୀ",
-        "ବିଷ ପିଇ"
-    ],
-
-    "MISSING": [
-
-        "missing",
-        "missing person",
-        "missing woman",
-        "missing boy",
-        "missing girl",
-
-        "ନିଖୋଜ",
-        "ବେପତ୍ତା"
-    ]
-
-}
-
-def detect_crime(text):
-
-    text = text.lower()
+    text = normalize_text(text)
 
     crime_scores = {}
 
-    for crime, keywords in CRIME_KEYWORDS.items():
+    for macro, keywords in MACRO_CRIMES.items():
 
-        score = 0
+        crime_scores[macro] = calculate_score(text, keywords)
 
-        for keyword in keywords:
+    best_macro = max(crime_scores, key=crime_scores.get)
 
-            if keyword.lower() in text:
-
-                score += 1
-
-        crime_scores[crime] = score
-
-    best_crime = max(
-        crime_scores,
-        key=crime_scores.get
-    )
-
-    if crime_scores[best_crime] == 0:
-
+    if crime_scores[best_macro] == 0:
         return "OTHER"
 
-    return best_crime
+    return best_macro
+
+
+def detect_micro_crime(text, macro_crime):
+    """
+    Detect the best micro crime under the detected macro.
+    """
+
+    text = normalize_text(text)
+
+    if macro_crime not in MICRO_CRIMES:
+        return macro_crime
+
+    micro_scores = {}
+
+    for micro, keywords in MICRO_CRIMES[macro_crime].items():
+
+        micro_scores[micro] = calculate_score(text, keywords)
+
+    if not micro_scores:
+        return macro_crime
+
+    best_micro = max(micro_scores, key=micro_scores.get)
+
+    if micro_scores[best_micro] == 0:
+        return macro_crime
+
+    return best_micro
+
+
+def detect_crime(text):
+    """
+    Detect both macro and micro crime.
+
+    Returns:
+    {
+        "macro_crime": "...",
+        "micro_crime": "..."
+    }
+    """
+
+    macro = detect_macro_crime(text)
+
+    if macro == "OTHER":
+
+        return {
+
+            "macro_crime": "OTHER",
+
+            "micro_crime": "OTHER"
+
+        }
+
+    micro = detect_micro_crime(text, macro)
+
+    return {
+
+        "macro_crime": macro,
+
+        "micro_crime": micro
+
+    }

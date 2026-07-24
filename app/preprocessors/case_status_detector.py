@@ -9,106 +9,170 @@ SOLVED_KEYWORDS = [
     "nabbed",
     "caught",
     "captured",
+    "police custody",
+    "accused arrested",
+    "all accused arrested",
+    "gang arrested",
+    "mastermind arrested",
+    "kingpin arrested",
 
-    # Case solved
-    "case solved",
-    "crime solved",
-    "police solved",
-    "cracked",
-    "identified",
+    # Seizure / Recovery
+    "recovered",
+    "property recovered",
+    "weapon recovered",
+    "loot recovered",
+    "cash recovered",
+    "gold recovered",
+    "bike recovered",
+    "vehicle recovered",
+    "mobile recovered",
+    "seized",
+    "items seized",
+    "articles seized",
+
+    # Chargesheet
+    "chargesheet",
+    "charge sheet",
+    "charge-sheet",
+    "chargesheet filed",
+    "chargesheet submitted",
+    "final report filed",
 
     # Court
-    "chargesheet filed",
-    "charge sheet filed",
-    "chargesheet submitted",
     "convicted",
-    "sentenced",
     "found guilty",
+    "sentenced",
+    "life imprisonment",
+    "death sentence",
+    "rigorous imprisonment",
+    "fine imposed",
+    "court convicted",
+    "court sentenced",
+    "judgement",
+    "judgment",
+    "verdict",
 
-    # All accused
-    "all accused arrested",
-    "all accused held",
-
-    # English
+    # Police Success
+    "case solved",
+    "crime solved",
+    "crime cracked",
     "case cracked",
-    "mastermind arrested",
+    "mystery solved",
+    "gang busted",
+
+    # Cyber
+    "money recovered",
+    "account frozen",
+    "refund issued",
 
     # Odia
     "ଗିରଫ",
     "ଗିରଫତାର",
     "ଧରାପଡିଲେ",
-    "ଅଭିଯୁକ୍ତ ଗିରଫ",
-    "ଦୋଷୀ",
-    "ଦଣ୍ଡିତ",
     "ଚାର୍ଜସିଟ",
-    "ମାମଲା ସମାଧାନ"
-
+    "ଦଣ୍ଡିତ",
+    "ଜେଲ",
+    "ଦୋଷୀ",
+    "ଜବତ",
+    "ଉଦ୍ଧାର"
 ]
 
 ONGOING_KEYWORDS = [
 
+    # Investigation
     "investigation",
     "under investigation",
     "probe",
-    "probe underway",
     "investigating",
-    "search operation",
-    "search underway",
+    "further investigation",
+    "crime branch investigating",
+
+    # FIR
+    "fir",
+    "fir registered",
+    "case registered",
+    "registered a case",
+    "complaint lodged",
+    "complaint filed",
+    "complaint received",
+
+    # Inquiry
+    "inquiry",
+    "enquiry",
+    "departmental inquiry",
+    "internal inquiry",
+    "disciplinary inquiry",
+
+    # Suspension
+    "suspended",
+    "suspension",
+    "placed under suspension",
+
+    # Police action
     "questioning",
     "interrogation",
-    "forensic examination",
-    "evidence collection",
-    "examining cctv",
+    "search operation",
+    "collecting evidence",
+    "recording statement",
     "cctv footage",
+    "forensic examination",
+    "forensic team",
     "awaiting report",
-    "manhunt",
-    "looking into",
-    "crime branch investigating",
-    "further investigation",
+    "post mortem report",
+    "viscera report",
+    "pending investigation",
+    "pending inquiry",
 
-    # English
-    "police investigating",
-    "investigation continues",
+    # Vigilance
+    "vigilance",
+    "departmental proceedings",
 
     # Odia
     "ତଦନ୍ତ",
-    "ଅନୁସନ୍ଧାନ",
     "ଯାଞ୍ଚ",
-    "ତଦନ୍ତ ଜାରି",
+    "ଅନୁସନ୍ଧାନ",
     "ପଚରାଉଚରା",
-    "ସନ୍ଧାନ",
-    "ଖୋଜାଖୋଜି"
+    "ମାମଲା ରୁଜୁ",
+    "ଏଫଆଇଆର",
+    "ଅଭିଯୋଗ"
 
 ]
 
 UNSOLVED_KEYWORDS = [
 
     "unknown accused",
+    "unknown persons",
+    "unknown criminals",
+    "unknown miscreants",
+
+    "identity unknown",
     "unidentified",
+
     "absconding",
     "on the run",
+    "escaped",
+    "suspect fled",
+
+    "not arrested",
+    "yet to be arrested",
     "yet to be traced",
+
+    "search continues",
+
+    "still missing",
+    "missing",
+    "not traced",
+
+    "body yet to be identified",
+
     "no clue",
     "no breakthrough",
-    "could not trace",
-    "could not identify",
-    "search continues",
-    "accused escaped",
-    "escaped",
-    "fled",
-    "not arrested",
 
-    # Missing
-    "missing",
-    "still missing",
-
-    # Odia
     "ଅଜଣା",
     "ଅଜ୍ଞାତ",
     "ଫେରାର",
     "ନିଖୋଜ",
-    "ଧରାପଡିନାହିଁ",
-    "ଖୋଜା ଚାଲିଛି"
+    "ଧରାପଡିନାହିଁ"
 
 ]
 
@@ -117,21 +181,26 @@ PARTIALLY_SOLVED_KEYWORDS = [
     "one accused arrested",
     "two accused arrested",
     "three accused arrested",
+    "four accused arrested",
+
     "some accused arrested",
+    "few accused arrested",
+
     "remaining accused",
+    "remaining accused absconding",
     "others absconding",
-    "another accused absconding",
+
     "hunt continues",
     "search for remaining accused",
 
-    # English
+    "one arrested while others absconding",
+    "main accused absconding",
+
     "one arrested",
     "two arrested",
 
-    # Odia
     "ଜଣେ ଗିରଫ",
     "ଦୁଇଜଣ ଗିରଫ",
-    "କେତେକ ଗିରଫ",
     "ଅନ୍ୟ ଫେରାର",
     "ଅବଶିଷ୍ଟ ଅଭିଯୁକ୍ତ"
 
@@ -139,23 +208,26 @@ PARTIALLY_SOLVED_KEYWORDS = [
 
 def detect_case_status(text):
 
-    text = text.lower()
+    text = text.lower().strip()
 
     # Highest priority
     for keyword in PARTIALLY_SOLVED_KEYWORDS:
         if keyword.lower() in text:
             return "PARTIALLY_SOLVED"
 
+    # Solved
     for keyword in SOLVED_KEYWORDS:
         if keyword.lower() in text:
             return "SOLVED"
 
-    for keyword in ONGOING_KEYWORDS:
-        if keyword.lower() in text:
-            return "ONGOING"
-
+    # Unsolved
     for keyword in UNSOLVED_KEYWORDS:
         if keyword.lower() in text:
             return "UNSOLVED"
+
+    # Ongoing
+    for keyword in ONGOING_KEYWORDS:
+        if keyword.lower() in text:
+            return "ONGOING"
 
     return "UNKNOWN"

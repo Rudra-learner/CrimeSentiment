@@ -1,3 +1,5 @@
+from app.preprocessors.odisha_gazetteer import ODISHA_LOCATIONS
+
 POLICE_KEYWORDS = [
 
     # General Police
@@ -63,7 +65,6 @@ POLICE_KEYWORDS = [
     # Odisha Police
     "odisha police",
     "nayagarh police",
-    
 
     # Odia Keywords
     "ପୋଲିସ",
@@ -87,16 +88,43 @@ POLICE_KEYWORDS = [
 
 ]
 
+
 def police_mentioned(text):
+
+    if not text:
+        return False
 
     text = text.lower()
 
-    matches = 0
+    # Check if any police keyword exists
+    police_found = any(
+        keyword.lower() in text
+        for keyword in POLICE_KEYWORDS
+    )
 
-    for keyword in POLICE_KEYWORDS:
+    # Check if any Odisha district or place exists
+    location_found = False
 
-        if keyword.lower() in text:
+    for district, places in ODISHA_LOCATIONS.items():
 
-            matches += 1
+    # Check district name
+        if district.lower() in text:
+            location_found = True
+            break
 
-    return matches > 0
+    # Check every English/Odia synonym
+        for place_group in places:
+
+            for place in place_group:
+
+                if place.lower() in text:
+                    location_found = True
+                    break
+
+            if location_found:
+                break
+
+        if location_found:
+                break
+
+    return police_found 
