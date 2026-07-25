@@ -56,6 +56,10 @@ class ProcessedArticle(Base):
         String(100)
     )
 
+    crime_subcategory = Column(
+        String(100)
+    )
+
     location = Column(
         String(200)
     )
@@ -79,8 +83,8 @@ class ProcessedArticle(Base):
         default=datetime.utcnow
     )
 
-    news_event_id = Column(
-    Integer,
-    ForeignKey("news_events.id"),
-    nullable=True
-)
+#     news_event_id = Column(
+#     Integer,
+#     ForeignKey("news_events.id"),
+#     nullable=True
+# )
