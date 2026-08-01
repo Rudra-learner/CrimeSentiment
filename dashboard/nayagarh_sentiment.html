@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nayagarh Police - Nayagarh Crimes with Sentiment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="nayagarh_sentiment.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-shield-alt logo-img" style="font-size: 32px; color: var(--primary-cyan); margin-bottom: 10px;"></i>
+                <h2>Nayagarh Police</h2>
+                <p>Intelligence Platform</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul id="sidebar-menu">
+                    <li><a href="index.html"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a></li>
+                    <li class="active"><a href="nayagarh_sentiment.html"><i class="fas fa-balance-scale"></i> <span>Nayagarh Crimes with Sentiment</span></a></li>
+                    <li><a href="odisha_crimes.html"><i class="fas fa-globe-asia"></i> <span>Odisha Crime News</span></a></li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="#"><i class="fas fa-cog"></i> <span>Settings</span></a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="btn-icon"><i class="fas fa-bars"></i></button>
+                    <h1>Nayagarh Crimes with Sentiment Analysis</h1>
+                    <div class="date-time" id="datetime-display"></div>
+                </div>
+                
+                <div class="header-right">
+                    <button id="btn-run-pipeline" class="btn-filter" style="background: var(--accent-purple); color: white; display: flex; align-items: center; gap: 8px;"><i class="fas fa-play"></i> Run Pipeline</button>
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search title, category, location...">
+                    </div>
+                    
+                    <div class="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </div>
+                    
+                    <div class="user-profile">
+                        <div class="avatar"><i class="fas fa-user-tie"></i></div>
+                        <div class="user-info">
+                            <span class="name">Administrator</span>
+                            <span class="role">Command Center</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Global Filters Area -->
+            <div class="filters-bar" style="margin-bottom: 20px;">
+                <select id="filter-date">
+                    <option value="all" selected>All Time (All Records)</option>
+                    <option value="7">Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+                <div id="custom-date-fields" style="display: none; gap: 8px; align-items: center;">
+                    <input type="date" id="filter-start-date" class="btn-filter" style="background: var(--card-glass); color: var(--text-white); border: 1px solid var(--border-glass);">
+                    <span>to</span>
+                    <input type="date" id="filter-end-date" class="btn-filter" style="background: var(--card-glass); color: var(--text-white); border: 1px solid var(--border-glass);">
+                </div>
+                <select id="filter-category"><option value="all">All Categories</option></select>
+                <select id="filter-location"><option value="all">All Locations</option></select>
+                <select id="filter-priority">
+                    <option value="all">All Priorities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                <button class="btn-filter" id="btn-apply-filters"><i class="fas fa-filter"></i> Apply Filters</button>
+            </div>
+
+            <!-- Nayagarh Sentiment View -->
+            <div id="view-nayagarh-sentiment" class="view-section active" style="display: block;">
+                <div class="panel glass">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-shield-alt" style="color:var(--primary-cyan);"></i> Nayagarh Crime Reports & Stance Analysis</h2>
+                        <span class="badge" id="badge-nayagarh-count" style="background:var(--accent-purple); padding: 4px 12px; border-radius: 12px;">Total: 0</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+                        Filtered view showing crime news strictly related to Nayagarh along with NLP stance classification and severity ratings.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-nayagarh-sentiment">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title & URL</th>
+                                    <th>Source</th>
+                                    <th>Category</th>
+                                    <th>Location</th>
+                                    <th>Event ID</th>
+                                    <th>Stance / Sentiment</th>
+                                    <th>Severity / CPI</th>
+                                    <th>Confidence</th>
+                                    <th>Published Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Loaded via nayagarh_sentiment.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div class="pagination-controls" id="pagination-view-nayagarh-sentiment" style="display:flex; justify-content:flex-end; align-items:center; gap: 10px; margin-top: 20px;">
+                        <button class="btn-filter prev-page"><i class="fas fa-chevron-left"></i> Previous</button>
+                        <span style="color:var(--text-muted); font-size:0.9rem;">Page <strong class="current-page" style="color:var(--text-white);">1</strong> of <strong class="total-pages" style="color:var(--text-white);">1</strong></span>
+                        <button class="btn-filter next-page">Next <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="main-footer">
+                <p><strong>AI-Powered Crime Sentiment Analysis System for Nayagarh Police</strong></p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="nayagarh_sentiment.js"></script>
+</body>
+</html>

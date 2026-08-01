@@ -83,8 +83,8 @@ class ProcessedArticle(Base):
         default=datetime.utcnow
     )
 
-#     news_event_id = Column(
-#     Integer,
-#     ForeignKey("news_events.id"),
-#     nullable=True
-# )
+    news_event_id = Column(
+        Integer,
+        ForeignKey("news_events.id"),
+        nullable=True
+    )

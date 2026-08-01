@@ -1,3 +1,7 @@
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 import json
 from datetime import datetime
 
@@ -11,6 +15,7 @@ from app.models.processed_article import ProcessedArticle
 from app.models.news_event import NewsEvent
 from app.models.analysis_result import AnalysisResult
 from app.models.officer_mention import OfficerMention
+from app.models.nayagarh_article import NayagarhArticle
 
 from app.nlp.embedding_generator import EmbeddingGenerator
 
@@ -100,22 +105,27 @@ class EventMatcher:
 
         return new_event
 
+    def update_nayagarh_article_event(self, processed_article_id, event_id):
+        nayagarh_article = (
+            self.db.query(NayagarhArticle)
+            .filter(NayagarhArticle.processed_article_id == processed_article_id)
+            .first()
+        )
+        if nayagarh_article:
+            nayagarh_article.news_event_id = event_id
+
     def assign_existing_event(self, article, event):
         article.news_event_id = event.id
         event.updated_at = datetime.utcnow()
-
-        article.news_event_id = event.id
-
+        self.update_nayagarh_article_event(article.id, event.id)
         self.db.commit()
-
         self.db.refresh(article)
-
         print(f"Matched with Event ID : {event.id}")
-
         return event
 
     def match_article(self, article):
-        print(f"\nMatching : {article.title}")
+        safe_title = str(article.title).encode('ascii', 'replace').decode('ascii')
+        print(f"\nMatching : {safe_title}")
 
         article_embedding = self.generate_event_embedding(article)
         best_event, similarity = self.get_best_matching_event(
@@ -127,6 +137,7 @@ class EventMatcher:
             print("No Existing Events Found.")
             event = self.create_new_event(article, article_embedding)
             article.news_event_id = event.id
+            self.update_nayagarh_article_event(article.id, event.id)
             self.db.commit()
             return event.id
 
@@ -139,8 +150,8 @@ class EventMatcher:
         print("Similarity Below Threshold.")
         event = self.create_new_event(article, article_embedding)
         article.news_event_id = event.id
+        self.update_nayagarh_article_event(article.id, event.id)
         self.db.commit()
-
         return event.id
 
     def process_articles(self):

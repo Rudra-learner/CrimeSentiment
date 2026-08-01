@@ -1,6 +1,9 @@
 from datetime import datetime
 from dateutil import parser
 import traceback
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from app.database.database import SessionLocal
 from app.models.article import RawArticle
@@ -34,100 +37,99 @@ def preprocess_articles():
         print(f"\nFound {len(raw_articles)} raw articles.\n")
 
         for article in raw_articles:
+            try:
+                safe_title = str(article.title).encode('ascii', 'replace').decode('ascii')
+                print(f"Processing ({article.id}): {safe_title}")
 
-            print(f"Processing: {article.title}")
+                clean_article = clean_text(article.article_text)
+                language = detect_language(clean_article)
 
-            clean_article = clean_text(article.article_text)
+                if language == "unknown":
+                    article.is_preprocessed = True
+                    db.commit()
+                    print("Skipped - Unknown Language")
+                    continue
+                content_hash = generate_hash(clean_article)
 
-            language = detect_language(clean_article)
+                crime = detect_crime(clean_article)
 
-            if language == "unknown":
+                print(type(crime))
+                print(crime)
+                crime_category = crime["macro_crime"]
+                crime_subcategory = crime["micro_crime"]
+
+                if crime_category == "OTHER":
+                    article.is_preprocessed = True
+                    db.commit()
+                    print("Skipped - Not a Crime Article")
+                    continue
+
+                # Detect Odisha location
+                location = detect_location(clean_article)
+
+                if location == "Unknown":
+                    article.is_preprocessed = True
+                    db.commit()
+                    print("Skipped - Not an Odisha Article")
+                    continue
+
+                police = police_mentioned(clean_article)
+
+                case_status = detect_case_status(clean_article)
+
+                officers = detect_officers(clean_article)
+
+                # Check duplicate
+                duplicate = (
+                    db.query(ProcessedArticle)
+                    .filter(ProcessedArticle.content_hash == content_hash)
+                    .first()
+                )
+
+                if duplicate:
+                    article.is_preprocessed = True
+                    db.commit()
+                    print("Duplicate Article Skipped")
+                    continue
+
+                # Parse published date
+                parsed_pub_date = article.collected_at or datetime.utcnow()
+
+                if article.published_date:
+                    try:
+                        parsed_pub_date = parser.parse(article.published_date)
+
+                        if parsed_pub_date.tzinfo is not None:
+                            parsed_pub_date = parsed_pub_date.replace(tzinfo=None)
+
+                    except Exception:
+                        pass
+
+                processed_article = ProcessedArticle(
+                    raw_article_id=article.id,
+                    title=article.title,
+                    source=article.source,
+                    url=article.url,
+                    clean_text=clean_article,
+                    language=language,
+                    content_hash=content_hash,
+                    crime_category=crime_category,
+                    crime_subcategory=crime_subcategory,
+                    location=location,
+                    police_mentioned=police,
+                    case_status=case_status,
+                    processed_at=datetime.utcnow(),
+                    published_date=parsed_pub_date
+                )
+
+                db.add(processed_article)
+
                 article.is_preprocessed = True
+
                 db.commit()
-                print("Skipped - Unknown Language")
-                continue
+                db.refresh(processed_article)
 
-            content_hash = generate_hash(clean_article)
-
-            crime = detect_crime(clean_article)
-
-            print(type(crime))
-            print(crime)
-            crime_category = crime["macro_crime"]
-            crime_subcategory = crime["micro_crime"]
-
-            if crime_category == "OTHER":
-                article.is_preprocessed = True
-                db.commit()
-                print("Skipped - Not a Crime Article")
-                continue
-
-            # Detect Odisha location
-            location = detect_location(clean_article)
-
-            if location == "Unknown":
-                article.is_preprocessed = True
-                db.commit()
-                print("Skipped - Not an Odisha Article")
-                continue
-
-            police = police_mentioned(clean_article)
-
-            case_status = detect_case_status(clean_article)
-
-            officers = detect_officers(clean_article)
-
-            # Check duplicate
-            duplicate = (
-                db.query(ProcessedArticle)
-                .filter(ProcessedArticle.content_hash == content_hash)
-                .first()
-            )
-
-            if duplicate:
-                article.is_preprocessed = True
-                db.commit()
-                print("Duplicate Article Skipped")
-                continue
-
-            # Parse published date
-            parsed_pub_date = article.collected_at or datetime.utcnow()
-
-            if article.published_date:
-                try:
-                    parsed_pub_date = parser.parse(article.published_date)
-
-                    if parsed_pub_date.tzinfo is not None:
-                        parsed_pub_date = parsed_pub_date.replace(tzinfo=None)
-
-                except Exception:
-                    pass
-
-            processed_article = ProcessedArticle(
-                raw_article_id=article.id,
-                title=article.title,
-                source=article.source,
-                url=article.url,
-                clean_text=clean_article,
-                language=language,
-                content_hash=content_hash,
-                crime_category=crime_category,
-                crime_subcategory=crime_subcategory,
-                location=location,
-                police_mentioned=police,
-                case_status=case_status,
-                processed_at=datetime.utcnow(),
-                published_date=parsed_pub_date
-            )
-
-            db.add(processed_article)
-
-            article.is_preprocessed = True
-
-            db.commit()
-            db.refresh(processed_article)
-
-            print(f"""
+                print(f"""
 Processed Successfully
 
 Crime              : {crime_category}
@@ -138,35 +140,37 @@ Language           : {language}
 Officers           : {officers}
 
 """)
-            if processed_article.location == "Nayagarh":
-                nayagarh = NayagarhArticle(
-                            processed_article_id=processed_article.id,
-                            title=article.title,
-                            source=article.source,
-                            url=article.url,
-                            clean_text=clean_article,
-                            language=language,
-                            content_hash=content_hash,
-                            crime_category=crime_category,
-                            crime_subcategory=crime_subcategory,
-                            location=location,
-                            police_mentioned=police,
-                            case_status=case_status,
-                            processed_at=datetime.utcnow(),
-                            published_date=parsed_pub_date
-                        )
-    
-                db.add(nayagarh)
-                db.commit()
-                print("Saved to Nayagarh Articles")
+                if processed_article.location == "Nayagarh":
+                    nayagarh = NayagarhArticle(
+                                processed_article_id=processed_article.id,
+                                title=article.title,
+                                source=article.source,
+                                url=article.url,
+                                clean_text=clean_article,
+                                language=language,
+                                content_hash=content_hash,
+                                crime_category=crime_category,
+                                crime_subcategory=crime_subcategory,
+                                location=location,
+                                police_mentioned=police,
+                                case_status=case_status,
+                                processed_at=datetime.utcnow(),
+                                published_date=parsed_pub_date
+                            )
+
+                    db.add(nayagarh)
+                    db.commit()
+                    print("Saved to Nayagarh Articles")
+
+            except Exception as loop_err:
+                db.rollback()
+                print(f"Error processing article ID {article.id}: {loop_err}")
+                continue
+
     except Exception as e:
-
         db.rollback()
-
         traceback.print_exc()
-
     finally:
-
         db.close()
 
 

@@ -1,37 +1,43 @@
-from datetime import datetime
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
+from datetime import datetime
 import torch
-from scipy.special import softmax
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification
+from transformers import pipeline
 
 from app.database.database import SessionLocal
 from app.models.news_event import NewsEvent
 from app.models.processed_article import ProcessedArticle
+from app.models.nayagarh_article import NayagarhArticle
 from app.models.analysis_result import AnalysisResult
 
 
-MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+MODEL_NAME = "typeform/distilbert-base-uncased-mnli"
 
 
 class SentimentAnalyzer:
 
     def __init__(self):
-        print("Loading RoBERTa Sentiment Model...")
+        print("Loading Zero-Shot Sentiment Model...")
 
         self.db = SessionLocal()
 
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        self.classifier = pipeline(
+            "zero-shot-classification",
+            model=MODEL_NAME,
+            device=-1 # CPU
+        )
 
-        self.model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-
-        self.model.to("cpu")
-
-        self.labels = [
-            "Negative",
-            "Neutral",
-            "Positive"
+        self.candidate_labels = [
+            "opposing police statements, alleging investigation faults, or saying important facts are missing",
+            "supporting police reports, endorsing police statements, or praising effective police action"
         ]
+        
+        self.label_mapping = {
+            "opposing police statements, alleging investigation faults, or saying important facts are missing": "Negative",
+            "supporting police reports, endorsing police statements, or praising effective police action": "Positive"
+        }
 
         print("Sentiment Model Loaded Successfully.")
 
@@ -39,21 +45,26 @@ class SentimentAnalyzer:
         if not text:
             return None, None
 
-        inputs = self.tokenizer(
+        # Truncate text to roughly 512 tokens to avoid length errors
+        text = text[:2000]
+
+        result = self.classifier(
             text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512
+            candidate_labels=self.candidate_labels,
+            multi_label=True,
+            hypothesis_template="The media stance in this article is {}."
         )
-
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-
-        scores = outputs.logits[0].numpy()
-        probabilities = softmax(scores)
-        predicted_index = probabilities.argmax()
-        sentiment = self.labels[predicted_index]
-        confidence = round(float(probabilities[predicted_index]) * 100, 2)
+        
+        top_label = result['labels'][0]
+        top_score = result['scores'][0]
+        
+        # If neither supporting nor opposing probability exceeds 0.50, it is neutral reporting
+        if top_score < 0.50:
+            sentiment = "Neutral"
+            confidence = round((1.0 - top_score) * 100, 2)
+        else:
+            sentiment = self.label_mapping[top_label]
+            confidence = round(top_score * 100, 2)
 
         return sentiment, confidence
 
@@ -89,12 +100,10 @@ class SentimentAnalyzer:
         return article is not None
 
     def save_analysis_result(self, article, sentiment, confidence, severity_score, cpi):
-
+        target_id = getattr(article, 'processed_article_id', article.id)
         result = AnalysisResult(
-
-        processed_article_id=article.id,
-
-        news_event_id=article.news_event_id,
+            processed_article_id=target_id,
+            news_event_id=article.news_event_id,
 
         article_title=article.title,
 
@@ -116,14 +125,17 @@ class SentimentAnalyzer:
 
         self.db.commit()
 
-        print(f"Sentiment Saved : {article.title}")
+        safe_title = str(article.title).encode('ascii', 'replace').decode('ascii')
+        print(f"Sentiment Saved : {safe_title}")
 
     def analyze_article(self, article):
-        if self.article_already_analyzed(article.id):
-            print(f"Already Analyzed : {article.title}")
+        target_id = getattr(article, 'processed_article_id', article.id)
+        safe_title = str(article.title).encode('ascii', 'replace').decode('ascii')
+        if self.article_already_analyzed(target_id):
+            print(f"Already Analyzed : {safe_title}")
             return
 
-        print(f"\nAnalyzing : {article.title}")
+        print(f"\nAnalyzing : {safe_title}")
 
         if not article.clean_text:
             return
@@ -136,13 +148,6 @@ class SentimentAnalyzer:
 
         severity_score, cpi = self.determine_severity_and_cpi(article.crime_category)
 
-        # Override sentiment based on case status
-        status = (article.case_status or "").lower()
-        if "solved" in status or "arrest" in status:
-            sentiment = "Positive"
-        elif "unsolved" in status or "ongoing" in status or "investigation" in status:
-            sentiment = "Negative"
-
         print(f"Sentiment : {sentiment} (Severity: {severity_score}, CPI: {cpi})")
         print(f"Confidence : {confidence:.2f}%")
 
@@ -150,12 +155,12 @@ class SentimentAnalyzer:
 
     def process_all_articles(self):
         articles = (
-    self.db.query(ProcessedArticle)
-    .filter(
-        ProcessedArticle.news_event_id.isnot(None)
-    )
-    .all()
-)
+            self.db.query(NayagarhArticle)
+            .filter(
+                NayagarhArticle.news_event_id.isnot(None)
+            )
+            .all()
+        )
 
         print(f"\nFound {len(articles)} articles.\n")
 

@@ -10,8 +10,38 @@ from app.models.processed_article import ProcessedArticle
 from app.models.news_event import NewsEvent
 from app.models.analysis_result import AnalysisResult
 from app.models.officer_mention import OfficerMention
+from app.models.nayagarh_article import NayagarhArticle
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+
+def apply_common_filters(query, model, date_col=None, days=None, start_date=None, end_date=None, category=None, location=None, search=None):
+    if date_col is not None:
+        if days:
+            min_date = datetime.utcnow() - timedelta(days=days)
+            query = query.filter(date_col >= min_date)
+        elif start_date or end_date:
+            try:
+                if start_date:
+                    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+                    query = query.filter(date_col >= start_dt)
+                if end_date:
+                    end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+                    query = query.filter(date_col < end_dt)
+            except ValueError:
+                pass
+    if category and category.lower() != "all categories" and category.lower() != "all":
+        query = query.filter(or_(func.lower(model.crime_category) == category.lower(), func.lower(model.crime_subcategory) == category.lower()))
+    if location and location.lower() != "all locations" and location.lower() != "all":
+        query = query.filter(func.lower(model.location) == location.lower())
+    if search:
+        search_term = f"%{search.lower()}%"
+        query = query.filter(or_(
+            func.lower(model.title).like(search_term),
+            func.lower(model.source).like(search_term),
+            func.lower(model.crime_category).like(search_term),
+            func.lower(model.location).like(search_term)
+        ))
+    return query
 
 def get_db():
     db = SessionLocal()
@@ -47,8 +77,11 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
     
     q_pa = db.query(ProcessedArticle)
     q_pa = apply_date_filter(q_pa, ProcessedArticle.published_date, days, start_date, end_date)
-    
     total_processed = q_pa.count()
+    
+    q_na = db.query(NayagarhArticle)
+    q_na = apply_date_filter(q_na, NayagarhArticle.published_date, days, start_date, end_date)
+    total_nayagarh = q_na.count()
     
     q_events = db.query(NewsEvent)
     q_events = apply_date_filter(q_events, NewsEvent.created_at, days, start_date, end_date)
@@ -84,6 +117,8 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
         avg_officer_sentiment = 0.0
         
     return {
+        "OdishaCrimes": total_processed,
+        "NayagarhCrimes": total_nayagarh,
         "TotalArticles": total_raw,
         "ProcessedArticles": total_processed,
         "TotalCrimeEvents": total_events,
@@ -162,26 +197,29 @@ def get_map_data(db: Session = Depends(get_db), days: int = None, start_date: st
 
 @router.get("/news-events")
 def get_news_events(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None):
-    q = db.query(NewsEvent).order_by(desc(NewsEvent.created_at)).limit(10)
+    q = db.query(NewsEvent)
     q = apply_date_filter(q, NewsEvent.created_at, days, start_date, end_date)
-    events = q.all()
+    events = q.order_by(desc(NewsEvent.created_at)).limit(15).all()
     result = []
     for i, e in enumerate(events):
+        article = db.query(ProcessedArticle).filter(ProcessedArticle.news_event_id == e.id).first()
+        url = article.url if article else "#"
         result.append({
             "event_id": f"EVT_2026_{str(e.id).zfill(3)}",
             "title": e.event_title,
-            "publishers": ["OTV", "Pragativadi"],
+            "publishers": ["OTV", "Pragativadi", "Sambad"],
             "similarity": round(0.85 + (0.01 * (i%10)), 2),
-            "related_count": 3 + (i%5),
-            "timeline": e.created_at.strftime("%Y-%m-%d %H:%M") if e.created_at else "Recently"
+            "related_count": 2 + (i%5),
+            "timeline": e.created_at.strftime("%Y-%m-%d %H:%M") if e.created_at else "Recently",
+            "url": url
         })
     return result
 
 @router.get("/latest-news")
 def get_latest_news(db: Session = Depends(get_db), days: int = None, start_date: str = None, end_date: str = None):
-    q = db.query(ProcessedArticle).order_by(desc(ProcessedArticle.published_date)).limit(10)
+    q = db.query(ProcessedArticle)
     q = apply_date_filter(q, ProcessedArticle.published_date, days, start_date, end_date)
-    articles = q.all()
+    articles = q.order_by(desc(ProcessedArticle.published_date)).limit(25).all()
     result = []
     for a in articles:
         analysis = db.query(AnalysisResult).filter(AnalysisResult.processed_article_id == a.id).first()
@@ -192,8 +230,9 @@ def get_latest_news(db: Session = Depends(get_db), days: int = None, start_date:
             "category": a.crime_category,
             "location": a.location,
             "event_id": f"EVT_2026_{(a.news_event_id or 1):03d}",
-            "time": a.published_date.strftime("%Y-%m-%d %H:%M") if a.published_date else "",
-            "sentiment": sentiment
+            "time": a.published_date.strftime("%Y-%m-%d") if a.published_date else "",
+            "sentiment": sentiment,
+            "url": a.url or "#"
         })
     return result
 
@@ -287,6 +326,74 @@ def get_publisher_comparison(db: Session = Depends(get_db), days: int = None, st
         })
     return result
 
+@router.get("/filter-options")
+def get_filter_options(db: Session = Depends(get_db)):
+    cats_pa = [c[0] for c in db.query(ProcessedArticle.crime_category).distinct().all() if c[0]]
+    cats_na = [c[0] for c in db.query(NayagarhArticle.crime_category).distinct().all() if c[0]]
+    subcats_pa = [c[0] for c in db.query(ProcessedArticle.crime_subcategory).distinct().all() if c[0]]
+    locs_pa = [l[0] for l in db.query(ProcessedArticle.location).distinct().all() if l[0]]
+    locs_na = [l[0] for l in db.query(NayagarhArticle.location).distinct().all() if l[0]]
+    
+    categories = sorted(list(set(cats_pa + cats_na + subcats_pa)))
+    locations = sorted(list(set(locs_pa + locs_na)))
+    return {"categories": categories, "locations": locations}
+
+@router.get("/table/nayagarh-sentiment")
+def get_nayagarh_sentiment_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, priority: str = None, category: str = None, location: str = None, search: str = None, db: Session = Depends(get_db)):
+    q = db.query(NayagarhArticle, AnalysisResult).outerjoin(AnalysisResult, AnalysisResult.processed_article_id == NayagarhArticle.processed_article_id)
+    q = apply_common_filters(q, NayagarhArticle, date_col=NayagarhArticle.published_date, days=days, start_date=start_date, end_date=end_date, category=category, location=location, search=search)
+    if priority and priority.lower() != 'all' and priority.lower() != 'all priorities':
+        q = q.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
+        
+    total = q.count()
+    offset = (page - 1) * limit
+    results = q.order_by(desc(NayagarhArticle.id)).offset(offset).limit(limit).all()
+    
+    data = []
+    for na, ar in results:
+        data.append({
+            "id": na.id,
+            "title": na.title or "N/A",
+            "source": na.source or "Unknown",
+            "category": na.crime_category or "Uncategorized",
+            "subcategory": na.crime_subcategory or "",
+            "location": na.location or "Nayagarh",
+            "case_status": na.case_status or "ONGOING",
+            "event_id": f"EVT_2026_{na.news_event_id:03d}" if na.news_event_id else "Unassigned",
+            "published_date": na.published_date.strftime("%Y-%m-%d") if na.published_date else "",
+            "sentiment": ar.sentiment if ar else "Neutral",
+            "severity_score": ar.severity_score if ar else 3,
+            "cpi": ar.crime_priority_index if ar else "Low",
+            "confidence": round(ar.confidence, 1) if ar and ar.confidence else 0.0,
+            "url": na.url or "#"
+        })
+    return {"data": data, "total": total, "page": page, "limit": limit}
+
+@router.get("/table/odisha-crimes")
+def get_odisha_crimes_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, category: str = None, location: str = None, search: str = None, db: Session = Depends(get_db)):
+    q = db.query(ProcessedArticle)
+    q = apply_common_filters(q, ProcessedArticle, date_col=ProcessedArticle.published_date, days=days, start_date=start_date, end_date=end_date, category=category, location=location, search=search)
+    
+    total = q.count()
+    offset = (page - 1) * limit
+    articles = q.order_by(desc(ProcessedArticle.id)).offset(offset).limit(limit).all()
+    
+    data = []
+    for a in articles:
+        data.append({
+            "id": a.id,
+            "title": a.title or "N/A",
+            "source": a.source or "Unknown",
+            "category": a.crime_category or "Uncategorized",
+            "subcategory": a.crime_subcategory or "",
+            "location": a.location or "Odisha",
+            "case_status": a.case_status or "ONGOING",
+            "event_id": f"EVT_2026_{a.news_event_id:03d}" if a.news_event_id else "Unassigned",
+            "published_date": a.published_date.strftime("%Y-%m-%d") if a.published_date else "",
+            "url": a.url or "#"
+        })
+    return {"data": data, "total": total, "page": page, "limit": limit}
+
 @router.get("/table/raw-articles")
 def get_raw_articles_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, db: Session = Depends(get_db)):
     q = db.query(RawArticle)
@@ -299,13 +406,7 @@ def get_raw_articles_table(page: int = 1, limit: int = 25, days: int = None, sta
 
 @router.get("/table/processed-articles")
 def get_processed_articles_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, db: Session = Depends(get_db)):
-    q = db.query(ProcessedArticle)
-    q = apply_date_filter(q, ProcessedArticle.published_date, days, start_date, end_date)
-    total = q.count()
-    offset = (page - 1) * limit
-    articles = q.order_by(asc(ProcessedArticle.id)).offset(offset).limit(limit).all()
-    data = [{"id": a.id, "title": a.title, "source": a.source, "category": a.crime_category, "location": a.location, "status": a.case_status, "processed_at": a.processed_at, "published_date": a.published_date, "url": a.url} for a in articles]
-    return {"data": data, "total": total, "page": page, "limit": limit}
+    return get_odisha_crimes_table(page=page, limit=limit, days=days, start_date=start_date, end_date=end_date, db=db)
 
 @router.get("/table/news-events")
 def get_news_events_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, db: Session = Depends(get_db)):
@@ -325,15 +426,7 @@ def get_news_events_table(page: int = 1, limit: int = 25, days: int = None, star
 
 @router.get("/table/analysis-results")
 def get_analysis_results_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, priority: str = None, db: Session = Depends(get_db)):
-    q = db.query(AnalysisResult).join(ProcessedArticle)
-    q = apply_date_filter(q, ProcessedArticle.published_date, days, start_date, end_date)
-    if priority and priority.lower() != 'all':
-        q = q.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
-    total = q.count()
-    offset = (page - 1) * limit
-    results = q.order_by(desc(AnalysisResult.severity_score), asc(AnalysisResult.id)).offset(offset).limit(limit).all()
-    data = [{"id": a.id, "article_title": a.article_title, "source": a.source, "sentiment": a.sentiment, "severity_score": a.severity_score, "cpi": a.crime_priority_index, "confidence": a.confidence, "analyzed_at": a.analyzed_at, "url": a.url} for a in results]
-    return {"data": data, "total": total, "page": page, "limit": limit}
+    return get_nayagarh_sentiment_table(page=page, limit=limit, days=days, start_date=start_date, end_date=end_date, priority=priority, db=db)
 
 @router.get("/table/officer-mentions")
 def get_officer_mentions_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, db: Session = Depends(get_db)):

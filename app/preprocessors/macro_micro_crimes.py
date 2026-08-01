@@ -61,6 +61,9 @@ MACRO_CRIMES = {
 
         "gold stolen",
         "cash stolen",
+        "sand theft",
+        "minor mineral theft",
+        "minor mineral/ sand theft",
 
         "ଚୋରି",
         "ଚୋର",
@@ -117,6 +120,7 @@ MACRO_CRIMES = {
 
     # Cyber
     "cyber fraud",
+    "cyber frauds",
     "cyber crime",
     "online fraud",
     "digital arrest",
@@ -126,6 +130,10 @@ MACRO_CRIMES = {
     "phishing",
     "hacking",
     "loan app",
+    "land fraud",
+    "land frauds",
+    "job fraud",
+    "job frauds",
 
     # Odia
     "ଠକେଇ",
@@ -230,6 +238,8 @@ MACRO_CRIMES = {
     "liquor seized",
     "spirit seized",
     "excise raid",
+    "alcohol seizure",
+    "cough syrup seizure",
 
     # Odia
     "ଅସ୍ତ୍ର",
@@ -519,6 +529,7 @@ MICRO_CRIMES = {
             "sand theft",
             "illegal sand mining",
             "minor mineral theft",
+            "minor mineral/ sand theft",
             "sand smuggling",
 
             "ବାଲି ଚୋରି"
@@ -595,6 +606,7 @@ MICRO_CRIMES = {
     "CYBER_FRAUD": [
 
         "cyber fraud",
+        "cyber frauds",
         "cyber crime",
         "online fraud",
         "digital arrest",
@@ -629,6 +641,7 @@ MICRO_CRIMES = {
 
     # English
     "land fraud",
+    "land frauds",
     "property fraud",
     "land mafia",
     "property mafia",
@@ -658,6 +671,7 @@ MICRO_CRIMES = {
     "JOB_FRAUD": [
 
         "job fraud",
+        "job frauds",
         "employment scam",
         "fake recruitment",
 
@@ -835,6 +849,7 @@ MICRO_CRIMES = {
     "NDPS_ACT": [
 
         "ndps",
+        "narcotics",
         "ganja",
         "brown sugar",
         "heroin",
@@ -847,7 +862,9 @@ MICRO_CRIMES = {
         "illegal liquor",
         "country liquor",
         "liquor seized",
-        "spirit seized"
+        "spirit seized",
+        "alcohol seizure",
+        "cough syrup seizure"
 
     ]
 

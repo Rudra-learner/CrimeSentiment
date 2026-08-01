@@ -45,8 +45,53 @@ function getFilterQueryString() {
         params.append('priority', filterPriority.value);
     }
     
+    const filterCategory = document.getElementById('filter-category');
+    if(filterCategory && filterCategory.value !== 'all') {
+        params.append('category', filterCategory.value);
+    }
+    
+    const filterLocation = document.getElementById('filter-location');
+    if(filterLocation && filterLocation.value !== 'all') {
+        params.append('location', filterLocation.value);
+    }
+    
+    const searchInput = document.getElementById('search-input');
+    if(searchInput && searchInput.value.trim() !== '') {
+        params.append('search', searchInput.value.trim());
+    }
+    
     const q = params.toString();
     return q ? '?' + q : '';
+}
+
+async function loadFilterOptions() {
+    try {
+        const res = await fetch('/api/dashboard/filter-options');
+        if(!res.ok) return;
+        const data = await res.json();
+        
+        const catSelect = document.getElementById('filter-category');
+        if(catSelect && data.categories) {
+            const currentVal = catSelect.value;
+            catSelect.innerHTML = '<option value="all">All Categories</option>';
+            data.categories.forEach(c => {
+                catSelect.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+            if(currentVal) catSelect.value = currentVal;
+        }
+        
+        const locSelect = document.getElementById('filter-location');
+        if(locSelect && data.locations) {
+            const currentVal = locSelect.value;
+            locSelect.innerHTML = '<option value="all">All Locations</option>';
+            data.locations.forEach(l => {
+                locSelect.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+            if(currentVal) locSelect.value = currentVal;
+        }
+    } catch (e) {
+        console.error("Error loading filter options", e);
+    }
 }
 
 async function fetchAPI(endpoint) {
@@ -236,20 +281,25 @@ async function updateMap() {
 
 async function updateNewsEvents() {
     const data = await fetchAPI('news-events');
-    if(!data) return;
-    
     const container = document.getElementById('events-list-container');
+    if(!container) return;
     container.innerHTML = '';
     
+    if(!data || data.length === 0) {
+        container.innerHTML = '<p style="padding: 15px; color: var(--text-muted); font-size: 0.9rem;">No news events matched your filter criteria.</p>';
+        return;
+    }
+    
     data.forEach(evt => {
+        const titleHtml = evt.url && evt.url !== '#' ? `<a href="${evt.url}" target="_blank" style="color:var(--text-white); text-decoration:none;">${evt.title} <i class="fas fa-external-link-alt" style="font-size:0.8rem; color:var(--accent-blue); margin-left:4px;"></i></a>` : evt.title;
         container.innerHTML += `
             <div class="list-item">
                 <div class="list-item-content">
-                    <h4>${evt.title}</h4>
-                    <p>Event ID: ${evt.event_id} | ${evt.timeline}</p>
+                    <h4 style="margin-bottom: 4px;">${titleHtml}</h4>
+                    <p style="margin-bottom: 6px;"><strong style="color:var(--accent-purple);">${evt.event_id}</strong> | ${evt.timeline}</p>
                     <div class="tags">
-                        ${evt.publishers.map(p => `<span class="tag">${p}</span>`).join('')}
-                        <span class="tag" style="background:var(--accent-blue);">Similarity: ${evt.similarity}</span>
+                        ${evt.publishers ? evt.publishers.map(p => `<span class="tag" style="background:rgba(255,255,255,0.08);">${p}</span>`).join('') : ''}
+                        <span class="tag" style="background:var(--accent-blue); color:#fff;">Similarity: ${evt.similarity}</span>
                     </div>
                 </div>
             </div>
@@ -259,22 +309,29 @@ async function updateNewsEvents() {
 
 async function updateLatestNews() {
     const data = await fetchAPI('latest-news');
-    if(!data) return;
-    
     const container = document.getElementById('news-feed-container');
+    if(!container) return;
     container.innerHTML = '';
     
+    if(!data || data.length === 0) {
+        container.innerHTML = '<p style="padding: 15px; color: var(--text-muted); font-size: 0.9rem;">No crime news articles found for the selected time period or filter.</p>';
+        return;
+    }
+    
     data.forEach(news => {
-        const sentClass = news.sentiment.toLowerCase() === 'positive' ? 'positive' : (news.sentiment.toLowerCase() === 'negative' ? 'negative' : '');
+        const sent = news.sentiment || 'Neutral';
+        const sentClass = sent.toLowerCase() === 'positive' ? 'positive' : (sent.toLowerCase() === 'negative' ? 'negative' : '');
+        const titleHtml = news.url && news.url !== '#' ? `<a href="${news.url}" target="_blank" style="color:var(--primary-cyan); text-decoration:none;">${news.title} <i class="fas fa-external-link-alt" style="font-size:0.8rem; color:var(--accent-blue); margin-left:4px;"></i></a>` : news.title;
+        
         container.innerHTML += `
             <div class="list-item">
                 <div class="list-item-content">
-                    <h4>${news.title}</h4>
-                    <p>${news.publisher} | ${news.time}</p>
+                    <h4 style="margin-bottom: 4px; line-height: 1.3;">${titleHtml}</h4>
+                    <p style="margin-bottom: 8px;"><strong>${news.publisher || 'Unknown Source'}</strong> | ${news.time}</p>
                     <div class="tags">
                         <span class="tag cyber">${news.category || 'Unknown'}</span>
-                        <span class="tag"><i class="fas fa-map-marker-alt"></i> ${news.location || 'N/A'}</span>
-                        <span class="tag sentiment ${sentClass}">Sentiment: ${news.sentiment}</span>
+                        <span class="tag"><i class="fas fa-map-marker-alt" style="color:var(--accent-orange)"></i> ${news.location || 'N/A'}</span>
+                        <span class="tag sentiment ${sentClass}">Stance: ${sent}</span>
                     </div>
                 </div>
             </div>
@@ -381,33 +438,37 @@ async function refreshDashboard() {
 
 // --- TABULAR VIEWS LOGIC ---
 const paginationState = {
-    'view-news-collection': { page: 1, limit: 25 },
-    'view-crime-analytics': { page: 1, limit: 25 },
-    'view-news-events': { page: 1, limit: 25 },
-    'view-sentiment-analysis': { page: 1, limit: 25 },
-    'view-officer-analytics': { page: 1, limit: 25 }
+    'view-nayagarh-sentiment': { page: 1, limit: 25 },
+    'view-odisha-crime': { page: 1, limit: 25 }
 };
 
-async function loadTableData(endpoint, tableId, rowMapper, viewId) {
-    const state = paginationState[viewId];
+async function loadTableData(endpoint, tableId, rowMapper, viewId, badgeId) {
+    const state = paginationState[viewId] || { page: 1, limit: 25 };
     const paginatedEndpoint = `${endpoint}?page=${state.page}&limit=${state.limit}`;
     
     const result = await fetchAPI(paginatedEndpoint);
     if(!result) return;
     
-    // Handle both old (flat array) and new (paginated object) backend responses
-    // in case the FastAPI server hasn't been restarted yet.
     const actualData = result.data ? result.data : (Array.isArray(result) ? result : []);
     const totalItems = result.total !== undefined ? result.total : actualData.length;
     const currentPage = result.page || state.page;
     const currentLimit = result.limit || state.limit;
     
+    const badge = document.getElementById(badgeId);
+    if(badge) {
+        badge.innerText = `Total: ${totalItems}`;
+    }
+    
     const tbody = document.querySelector(`#${tableId} tbody`);
     if(tbody) {
         tbody.innerHTML = '';
-        actualData.forEach(item => {
-            tbody.innerHTML += rowMapper(item);
-        });
+        if (actualData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px; color: var(--text-muted);">No matching crime records found for the selected filters.</td></tr>`;
+        } else {
+            actualData.forEach(item => {
+                tbody.innerHTML += rowMapper(item);
+            });
+        }
     }
 
     // Update Pagination UI
@@ -424,7 +485,6 @@ async function loadTableData(endpoint, tableId, rowMapper, viewId) {
         prevBtn.disabled = currentPage <= 1;
         nextBtn.disabled = currentPage >= totalPages;
         
-        // Remove old event listeners
         const newPrev = prevBtn.cloneNode(true);
         const newNext = nextBtn.cloneNode(true);
         prevBtn.replaceWith(newPrev);
@@ -447,28 +507,54 @@ async function loadTableData(endpoint, tableId, rowMapper, viewId) {
 }
 
 const viewsConfig = {
-    'view-news-collection': () => loadTableData('table/raw-articles', 'table-raw-articles', item => `
-        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td><td>${item.date || 'N/A'}</td><td>${item.collected_at || ''}</td></tr>`, 'view-news-collection'),
-    'view-crime-analytics': () => loadTableData('table/processed-articles', 'table-processed-articles', item => `
-        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.status || 'N/A'}</td><td>${item.processed_at || ''}</td></tr>`, 'view-crime-analytics'),
-    'view-news-events': () => loadTableData('table/news-events', 'table-events', item => `
-        <tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.title || 'N/A'}</a></td><td>${item.category || 'N/A'}</td><td>${item.location || 'N/A'}</td><td>${item.created_at || ''}</td></tr>`, 'view-news-events'),
-    'view-sentiment-analysis': () => loadTableData('table/analysis-results', 'table-analysis', item => {
+    'view-nayagarh-sentiment': () => loadTableData('table/nayagarh-sentiment', 'table-nayagarh-sentiment', item => {
         const sent = item.sentiment || 'Neutral';
         const sentClass = sent.toLowerCase() === 'positive' ? 'positive' : sent.toLowerCase() === 'negative' ? 'negative' : '';
         const severity = item.severity_score !== undefined ? item.severity_score : 3;
         const cpi = item.cpi || 'Low';
         let cpiColor = '#10b981'; // Green for Low
         if (cpi === 'Very High' || cpi === 'High') cpiColor = '#ef4444'; // Red
-        else if (cpi === 'Medium') cpiColor = '#f59e0b'; // Yellow/Orange
-        return `<tr><td>${item.id}</td><td><a href="${item.url}" target="_blank" style="color:#00e5ff; text-decoration:none;">${item.article_title || 'N/A'}</a></td><td>${item.source || 'N/A'}</td>
-        <td><span class="tag sentiment ${sentClass}">${sent}</span></td>
-        <td>${severity}</td>
-        <td><span class="tag" style="background-color: transparent; border: 1px solid ${cpiColor}; color: ${cpiColor};">${cpi}</span></td>
-        <td>${item.confidence ? item.confidence.toFixed(2) : 'N/A'}</td><td>${item.analyzed_at || ''}</td></tr>`;
-    }, 'view-sentiment-analysis'),
-    'view-officer-analytics': () => loadTableData('table/officer-mentions', 'table-officer-mentions', item => `
-        <tr><td>${item.id}</td><td>${item.officer_name || 'N/A'} <a href="${item.url}" target="_blank" style="color:#00e5ff; margin-left:8px;" title="View Article"><i class="fas fa-external-link-alt"></i></a></td><td>${item.designation || 'N/A'}</td><td>${item.police_station || 'N/A'}</td></tr>`, 'view-officer-analytics')
+        else if (cpi === 'Medium') cpiColor = '#f59e0b'; // Orange/Yellow
+        
+        return `<tr>
+            <td>${item.id}</td>
+            <td style="max-width: 380px; line-height: 1.4;">
+                <a href="${item.url}" target="_blank" style="color:var(--primary-cyan); text-decoration:none; font-weight: 500;">${item.title}</a>
+                <a href="${item.url}" target="_blank" style="margin-left: 8px; color: var(--accent-blue);" title="Redirect to Original Article"><i class="fas fa-external-link-alt"></i></a>
+            </td>
+            <td><span class="tag" style="background: rgba(255,255,255,0.08);">${item.source}</span></td>
+            <td><span class="tag cyber" style="display:inline-block; margin-bottom: 3px;">${item.category}</span>${item.subcategory ? `<br><small style="color:var(--text-muted)">${item.subcategory}</small>` : ''}</td>
+            <td><i class="fas fa-map-marker-alt" style="color:var(--accent-orange)"></i> ${item.location}</td>
+            <td><span style="color:var(--accent-purple); font-family: monospace; font-weight: 600;">${item.event_id}</span></td>
+            <td><span class="tag sentiment ${sentClass}">${sent}</span></td>
+            <td>
+                <strong>Sev: ${severity}/5</strong><br>
+                <span class="tag" style="background-color: transparent; border: 1px solid ${cpiColor}; color: ${cpiColor}; margin-top: 3px; display:inline-block;">${cpi}</span>
+            </td>
+            <td>${item.confidence}%</td>
+            <td style="white-space: nowrap; font-size: 0.85rem;">${item.published_date}</td>
+        </tr>`;
+    }, 'view-nayagarh-sentiment', 'badge-nayagarh-count'),
+
+    'view-odisha-crime': () => loadTableData('table/odisha-crimes', 'table-odisha-crime', item => {
+        let statusColor = '#3b82f6';
+        if (item.case_status === 'SOLVED') statusColor = '#10b981';
+        else if (item.case_status === 'PARTIALLY_SOLVED') statusColor = '#f59e0b';
+
+        return `<tr>
+            <td>${item.id}</td>
+            <td style="max-width: 420px; line-height: 1.4;">
+                <a href="${item.url}" target="_blank" style="color:var(--primary-cyan); text-decoration:none; font-weight: 500;">${item.title}</a>
+                <a href="${item.url}" target="_blank" style="margin-left: 8px; color: var(--accent-blue);" title="Redirect to Original Article"><i class="fas fa-external-link-alt"></i></a>
+            </td>
+            <td><span class="tag" style="background: rgba(255,255,255,0.08);">${item.source}</span></td>
+            <td><span class="tag cyber" style="display:inline-block; margin-bottom: 3px;">${item.category}</span>${item.subcategory ? `<br><small style="color:var(--text-muted)">${item.subcategory}</small>` : ''}</td>
+            <td><i class="fas fa-map-marker-alt" style="color:var(--accent-orange)"></i> ${item.location}</td>
+            <td><span class="tag" style="background-color: transparent; border: 1px solid ${statusColor}; color: ${statusColor};">${item.case_status}</span></td>
+            <td><span style="color:var(--accent-purple); font-family: monospace; font-weight: 600;">${item.event_id}</span></td>
+            <td style="white-space: nowrap; font-size: 0.85rem;">${item.published_date}</td>
+        </tr>`;
+    }, 'view-odisha-crime', 'badge-odisha-count')
 };
 
 function switchView(targetId) {
@@ -489,6 +575,7 @@ function switchView(targetId) {
 // Initial Load and Event Setup
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
+    loadFilterOptions();
     refreshDashboard();
     
     // Global Filters Logic
@@ -504,15 +591,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    function triggerActiveViewUpdate() {
+        const activeView = document.querySelector('.view-section.active');
+        if (activeView && activeView.id === 'view-dashboard') {
+            refreshDashboard();
+        } else if (activeView && viewsConfig[activeView.id]) {
+            if (paginationState[activeView.id]) paginationState[activeView.id].page = 1;
+            viewsConfig[activeView.id]();
+        }
+    }
+
     const btnApplyFilters = document.getElementById('btn-apply-filters');
     if (btnApplyFilters) {
-        btnApplyFilters.addEventListener('click', () => {
-            const activeView = document.querySelector('.view-section.active');
-            if (activeView && activeView.id === 'view-dashboard') {
-                refreshDashboard();
-            } else if (activeView && viewsConfig[activeView.id]) {
-                viewsConfig[activeView.id]();
-            }
+        btnApplyFilters.addEventListener('click', triggerActiveViewUpdate);
+    }
+    
+    ['filter-category', 'filter-location', 'filter-priority', 'filter-date'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('change', triggerActiveViewUpdate);
+    });
+    
+    const searchInput = document.getElementById('search-input');
+    if(searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(triggerActiveViewUpdate, 400);
         });
     }
     
