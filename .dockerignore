@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.vscode/
+data/
+*.db
+*.log
+test_pipeline.log
+test_pipeline_unbuffered.log
+migrate_data.py
