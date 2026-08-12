@@ -294,7 +294,7 @@ body {
 /* KPI Cards */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
 }
 .kpi-card {
@@ -537,3 +537,119 @@ body {
 .data-table tbody tr:hover { background: rgba(0, 229, 255, 0.05); transform: scale(1.002); }
 .tag.sentiment.positive { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
 .tag.sentiment.negative { box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
+
+/* Dropdown Menus */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 120%;
+    right: 0;
+    width: 250px;
+    background: var(--card-glass, rgba(15, 23, 42, 0.9));
+    border: 1px solid var(--border-glass, rgba(0, 240, 255, 0.15));
+    border-radius: 8px;
+    padding: 10px 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: none;
+    z-index: 1000;
+}
+
+.dropdown-menu.show {
+    display: block;
+    animation: fadeInDropdown 0.3s ease forwards;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-header {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
+}
+
+.dropdown-item {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    color: var(--text-white, #ffffff);
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Mode Theme */
+:root.light-mode {
+    --bg-dark: #f3f4f6;
+    --bg-navy: #ffffff;
+    --card-glass: rgba(255, 255, 255, 0.9);
+    --border-glass: rgba(0, 0, 0, 0.1);
+    
+    --primary-cyan: #0284c7;
+    --text-white: #111827;
+    --text-muted: #4b5563;
+    
+    /* specific adjustments */
+    --accent-purple: #7c3aed;
+    --accent-blue: #2563eb;
+}
+
+/* Light mode specific chart adjustments if needed */
+.light-mode .chart-box canvas {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9);
+}
+
+/* Make dropdown text visible in light mode */
+.light-mode .dropdown-item {
+    color: var(--text-white);
+}
+
+.light-mode .dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Admin menu item fix */
+.light-mode .user-profile span {
+    color: var(--text-white);
+}
+
+.light-mode h1, .light-mode h2, .light-mode h3, .light-mode h4, .light-mode p, .light-mode span, .light-mode div {
+    color: var(--text-white);
+}
+.light-mode .text-muted, .light-mode .sidebar-header p, .light-mode .dropdown-header {
+    color: var(--text-muted) !important;
+}
+.light-mode .kpi-data p {
+    color: var(--text-white);
+}
+.light-mode table th, .light-mode table td {
+    color: var(--text-white);
+    border-color: var(--border-glass);
+}
+
+@media (max-width: 1024px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 600px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}

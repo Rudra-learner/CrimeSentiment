@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nayagarh Police - Dashboard Overview</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <link rel="stylesheet" href="dashboard_overview.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=99">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=99"/>
+    <link rel="stylesheet" href="dashboard_overview.css?v=99">
 </head>
 <body>
     <div class="dashboard-container">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar collapsed">
             <div class="sidebar-header">
                 <i class="fas fa-shield-alt logo-img" style="font-size: 32px; color: var(--primary-cyan); margin-bottom: 10px;"></i>
                 <h2>Nayagarh Police</h2>
@@ -27,13 +27,18 @@
                 </ul>
             </nav>
             
-            <div class="sidebar-footer">
-                <a href="#"><i class="fas fa-cog"></i> <span>Settings</span></a>
+            <div class="sidebar-footer dropdown-container" style="width:100%;">
+                <a href="javascript:void(0)" onclick="toggleDropdown('settings-menu'); event.stopPropagation();"><i class="fas fa-cog"></i> <span>Settings</span></a>
+                <div class="dropdown-menu glass" id="settings-menu" style="bottom:100%; top:auto; left:100%; right:auto; width:200px; margin-left:10px;">
+                    <div class="dropdown-header">Settings</div>
+                    <div class="dropdown-item" id="theme-toggle-btn" onclick="toggleTheme()"><i class="fas fa-moon"></i> Dark Mode (Active)</div>
+                    <div class="dropdown-item"><i class="fas fa-user-shield"></i> System Preferences</div>
+                </div>
             </div>
         </aside>
         
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content expanded">
             <!-- Header -->
             <header class="top-header">
                 <div class="header-left">
@@ -46,19 +51,26 @@
                     <button id="btn-run-pipeline" class="btn-filter" style="background: var(--accent-purple); color: white; display: flex; align-items: center; gap: 8px;"><i class="fas fa-play"></i> Run Pipeline</button>
                     <div class="search-bar">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="search-input" placeholder="Search events, crimes, locations...">
+                        <input type="text" id="search-input" placeholder="Search...">
                     </div>
-                    
-                    <div class="notification-bell">
-                        <i class="fas fa-bell"></i>
-                        <span class="badge">3</span>
+                    <div class="dropdown-container">
+                        <button class="btn-icon" onclick="toggleDropdown('notif-menu')"><i class="fas fa-bell"></i><span class="badge">3</span></button>
+                        <div class="dropdown-menu glass" id="notif-menu">
+                            <div class="dropdown-header">Notifications</div>
+                            <div class="dropdown-item">New high severity incident reported in Nayagarh.</div>
+                            <div class="dropdown-item">Sentiment analysis batch processed successfully.</div>
+                            <div class="dropdown-item">System update scheduled for 02:00 AM.</div>
+                        </div>
                     </div>
-                    
-                    <div class="user-profile">
-                        <div class="avatar"><i class="fas fa-user-tie"></i></div>
-                        <div class="user-info">
-                            <span class="name">Administrator</span>
-                            <span class="role">Command Center</span>
+
+                    <div class="dropdown-container">
+                        <div class="user-profile" onclick="toggleDropdown('admin-menu')" style="cursor:pointer;">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" alt="User">
+                            <span>Administrator</span>
+                        </div>
+                        <div class="dropdown-menu glass" id="admin-menu">
+                            <div class="dropdown-header">Admin Account</div>
+                            <div class="dropdown-item" id="logout-btn" onclick="logout()" style="color:#ff3366"><i class="fas fa-sign-out-alt"></i> Logout</div>
                         </div>
                     </div>
                 </div>
@@ -92,24 +104,37 @@
             <div id="view-dashboard" class="view-section active" style="display: block;">
                 <!-- KPI Cards -->
                 <div class="kpi-grid">
-                    <div class="kpi-card glass"><div class="kpi-icon blue"><i class="fas fa-globe-asia"></i></div><div class="kpi-data"><h3>Odisha Crimes</h3><p id="kpi-odisha-crimes">0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon cyan"><i class="fas fa-shield-alt"></i></div><div class="kpi-data"><h3>Nayagarh Crimes</h3><p id="kpi-nayagarh-crimes">0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon orange"><i class="fas fa-exclamation-triangle"></i></div><div class="kpi-data"><h3>Crime Events</h3><p id="kpi-events">0</p></div></div>
+                    <div class="kpi-card glass" style="cursor: pointer;" onclick="window.location.href='odisha_crimes.html'"><div class="kpi-icon blue"><i class="fas fa-globe-asia"></i></div><div class="kpi-data"><h3>Odisha Crimes</h3><p id="kpi-odisha-crimes">0</p></div></div>
+                    <div class="kpi-card glass" style="cursor: pointer;" onclick="window.location.href='nayagarh_sentiment.html'"><div class="kpi-icon cyan"><i class="fas fa-shield-alt"></i></div><div class="kpi-data"><h3>Nayagarh Crimes</h3><p id="kpi-nayagarh-crimes">0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon red"><i class="fas fa-folder-open"></i></div><div class="kpi-data"><h3>Active Cases</h3><p id="kpi-active-cases">0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon green"><i class="fas fa-gavel"></i></div><div class="kpi-data"><h3>Solved Cases</h3><p id="kpi-solved">0</p></div></div>
-                </div>
 
-                <div class="kpi-grid secondary-kpis">
-                    <div class="kpi-card glass"><div class="kpi-icon purple"><i class="fas fa-user-lock"></i></div><div class="kpi-data"><h3>Arrested Cases</h3><p id="kpi-arrested">0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon yellow"><i class="fas fa-search"></i></div><div class="kpi-data"><h3>Under Investigation</h3><p id="kpi-investigation">0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon teal"><i class="fas fa-bullhorn"></i></div><div class="kpi-data"><h3>Police Mentioned</h3><p id="kpi-police-mentioned">0</p></div></div>
                     <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-crime"><i class="fas fa-smile"></i></div><div class="kpi-data"><h3>Avg Crime Sentiment</h3><p id="kpi-avg-crime-sent">0.0</p></div></div>
-                    <div class="kpi-card glass"><div class="kpi-icon" id="icon-sentiment-officer"><i class="fas fa-user-shield"></i></div><div class="kpi-data"><h3>Avg Officer Sentiment</h3><p id="kpi-avg-officer-sent">0.0</p></div></div>
+                    <div class="kpi-card glass" style="cursor: pointer;" onclick="window.location.href='nayagarh_sentiment.html?sentiment=positive'">
+                        <div class="kpi-icon green"><i class="fas fa-smile-beam"></i></div>
+                        <div class="kpi-data">
+                            <h3>Positive Sentiment Crimes</h3>
+                            <p id="kpi-positive-crimes">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card glass" style="cursor: pointer;" onclick="window.location.href='nayagarh_sentiment.html?sentiment=negative'">
+                        <div class="kpi-icon red"><i class="fas fa-frown"></i></div>
+                        <div class="kpi-data">
+                            <h3>Negative Sentiment Crimes</h3>
+                            <p id="kpi-negative-crimes">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card glass" style="cursor: pointer;" onclick="window.location.href='nayagarh_sentiment.html?sentiment=neutral'">
+                        <div class="kpi-icon" style="color: var(--text-muted)"><i class="fas fa-meh"></i></div>
+                        <div class="kpi-data">
+                            <h3>Neutral Sentiment Crimes</h3>
+                            <p id="kpi-neutral-crimes">0</p>
+                        </div>
+                    </div>
+
                 </div>
                 
-                <div class="dashboard-grid">
-                    <div class="col-left">
-                        <div class="panel glass">
+                <div class="panel glass">
                             <div class="panel-header">
                                 <h2><i class="fas fa-chart-line"></i> Crime Analytics</h2>
                                 <div class="panel-actions"><i class="fas fa-expand"></i></div>
@@ -123,70 +148,20 @@
                                     <h3>Crime Categories (Pie)</h3>
                                     <canvas id="chart-category-pie"></canvas>
                                 </div>
-                                <div class="chart-box">
-                                    <h3>Weekly Distribution</h3>
-                                    <canvas id="chart-weekly-dist"></canvas>
-                                </div>
+                                
                             </div>
                         </div>
 
-                        <div class="panel glass">
-                            <div class="panel-header">
-                                <h2><i class="fas fa-user-shield"></i> Officer Analytics</h2>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="data-table" id="table-officers">
-                                    <thead>
-                                        <tr>
-                                            <th>Officer Name</th>
-                                            <th>Designation</th>
-                                            <th>Mentions</th>
-                                            <th>Sentiment Breakdown (Pos/Neu/Neg)</th>
-                                            <th>Trend</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="dashboard-grid">
+                    <div class="col-left">
+                        
 
-                        <div class="panel glass ai-insights">
-                            <div class="panel-header">
-                                <h2><i class="fas fa-robot"></i> AI Insights Panel</h2>
-                            </div>
-                            <div class="insights-list">
-                                <div class="insight-item warning">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <div class="text">
-                                        <h4>Fastest Growing Crime</h4>
-                                        <p>Cyber Fraud mentions have increased by 24% this week.</p>
-                                    </div>
-                                </div>
-                                <div class="insight-item danger">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <div class="text">
-                                        <h4>Hotspot Alert</h4>
-                                        <p>Nayagarh Town showing unusual spike in theft reports.</p>
-                                    </div>
-                                </div>
-                                <div class="insight-item success">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <div class="text">
-                                        <h4>Sentiment Improvement</h4>
-                                        <p>Crime sentiment improved by 12% following recent cyber cell actions.</p>
-                                    </div>
-                                </div>
-                            </div>
+                        
                         </div>
                     </div>
                     
                     <div class="col-right">
-                        <div class="panel glass">
-                            <div class="panel-header">
-                                <h2><i class="fas fa-map-marked-alt"></i> Nayagarh District Intelligence Map</h2>
-                            </div>
-                            <div id="district-map" class="map-container"></div>
-                        </div>
+                        
 
                         <div class="panel glass">
                             <div class="panel-header">
@@ -217,14 +192,15 @@
             </div>
 
             <footer class="main-footer">
-                <p><strong>AI-Powered Crime Sentiment Analysis System for Nayagarh Police</strong></p>
+                <p><strong>AI-Powered Public Sentiment Analysis System towards Nayagarh crimes</strong></p>
             </footer>
         </main>
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dashboard_overview.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js?v=99"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=99"></script>
+    <script src="dashboard_overview.js?v=99"></script>
+    <script src="session_timeout.js"></script>
 </body>
 </html>

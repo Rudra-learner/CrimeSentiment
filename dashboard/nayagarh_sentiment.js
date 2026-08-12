@@ -32,6 +32,9 @@ function getFilterQueryString() {
     const filterLocation = document.getElementById('filter-location');
     if(filterLocation && filterLocation.value !== 'all') params.append('location', filterLocation.value);
     
+    const filterSentiment = document.getElementById('filter-sentiment');
+    if(filterSentiment && filterSentiment.value !== 'all') params.append('sentiment', filterSentiment.value);
+    
     const searchInput = document.getElementById('search-input');
     if(searchInput && searchInput.value.trim() !== '') params.append('search', searchInput.value.trim());
     
@@ -148,6 +151,17 @@ async function loadNayagarhTable() {
 document.addEventListener('DOMContentLoaded', () => {
     updateClock();
     loadFilterOptions();
+
+    // Check for sentiment parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sentimentParam = urlParams.get('sentiment');
+    if (sentimentParam) {
+        const sentimentDropdown = document.getElementById('filter-sentiment');
+        if (sentimentDropdown) {
+            sentimentDropdown.value = sentimentParam.toLowerCase();
+        }
+    }
+
     loadNayagarhTable();
     
     const filterDate = document.getElementById('filter-date');
@@ -202,4 +216,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setInterval(loadNayagarhTable, 30000);
+});
+
+// --- Header Interactivity ---
+window.toggleDropdown = function(menuId) {
+    const menus = document.querySelectorAll('.dropdown-menu');
+    menus.forEach(m => {
+        if (m.id !== menuId) m.classList.remove('show');
+    });
+    const menu = document.getElementById(menuId);
+    if (menu) menu.classList.toggle('show');
+};
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown-container')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+    }
+});
+
+window.logout = async function() {
+    try {
+        const res = await fetch('/api/logout', { method: 'POST' });
+        if (res.ok) {
+            window.location.href = '/dashboard/login.html';
+        }
+    } catch (err) {
+        console.error('Error logging out:', err);
+    }
+};
+
+// --- Theme Toggle ---
+window.toggleTheme = function() {
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.documentElement.classList.contains('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    updateThemeUI(isLight);
+};
+
+window.updateThemeUI = function(isLight) {
+    const themeBtns = document.querySelectorAll('#theme-toggle-btn');
+    themeBtns.forEach(btn => {
+        btn.innerHTML = isLight 
+            ? '<i class="fas fa-sun"></i> Light Mode (Active)' 
+            : '<i class="fas fa-moon"></i> Dark Mode (Active)';
+    });
+};
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-mode');
+        updateThemeUI(true);
+    }
+});
+
+// Force sidebar to be collapsed by default on load
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    if (sidebar && mainContent && window.innerWidth > 768) {
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('expanded');
+    }
 });

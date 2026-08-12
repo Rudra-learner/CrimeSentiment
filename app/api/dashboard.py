@@ -101,8 +101,19 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
         q_analysis = q_analysis.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
     analysis = q_analysis.all()
     
+    positive_crimes = 0
+    negative_crimes = 0
+    neutral_crimes = 0
+    
     if analysis:
         avg_sentiment = sum([get_sentiment_score(a.sentiment) for a in analysis]) / len(analysis)
+        for a in analysis:
+            if a.sentiment and a.sentiment.lower() == 'positive':
+                positive_crimes += 1
+            elif a.sentiment and a.sentiment.lower() == 'negative':
+                negative_crimes += 1
+            else:
+                neutral_crimes += 1
     else:
         avg_sentiment = 0.0
         
@@ -128,7 +139,10 @@ def get_kpi(db: Session = Depends(get_db), days: int = None, start_date: str = N
         "UnderInvestigation": under_investigation,
         "PoliceMentioned": police_mentioned,
         "AvgCrimeSentiment": round(avg_sentiment, 2),
-        "AvgOfficerSentiment": round(avg_officer_sentiment, 2)
+        "AvgOfficerSentiment": round(avg_officer_sentiment, 2),
+        "PositiveCrimes": positive_crimes,
+        "NegativeCrimes": negative_crimes,
+        "NeutralCrimes": neutral_crimes
     }
 
 @router.get("/crime-analytics")
@@ -339,11 +353,13 @@ def get_filter_options(db: Session = Depends(get_db)):
     return {"categories": categories, "locations": locations}
 
 @router.get("/table/nayagarh-sentiment")
-def get_nayagarh_sentiment_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, priority: str = None, category: str = None, location: str = None, search: str = None, db: Session = Depends(get_db)):
+def get_nayagarh_sentiment_table(page: int = 1, limit: int = 25, days: int = None, start_date: str = None, end_date: str = None, priority: str = None, category: str = None, location: str = None, search: str = None, sentiment: str = None, db: Session = Depends(get_db)):
     q = db.query(NayagarhArticle, AnalysisResult).outerjoin(AnalysisResult, AnalysisResult.processed_article_id == NayagarhArticle.processed_article_id)
     q = apply_common_filters(q, NayagarhArticle, date_col=NayagarhArticle.published_date, days=days, start_date=start_date, end_date=end_date, category=category, location=location, search=search)
     if priority and priority.lower() != 'all' and priority.lower() != 'all priorities':
         q = q.filter(func.lower(AnalysisResult.crime_priority_index) == priority.lower())
+    if sentiment and sentiment.lower() != 'all' and sentiment.lower() != 'all sentiments':
+        q = q.filter(func.lower(AnalysisResult.sentiment) == sentiment.lower())
         
     total = q.count()
     offset = (page - 1) * limit

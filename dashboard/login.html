@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nayagarh Police - Secure Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card glass">
+            <div class="login-header">
+                <i class="fas fa-shield-halved lock-icon"></i>
+                <h2>Restricted Access</h2>
+                <p>Nayagarh Police Analytics Dashboard</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" id="username" placeholder="Username" required autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                
+                <div id="error-message" class="error-message"></div>
+                
+                <button type="submit" id="login-btn" class="login-btn">
+                    <span id="btn-text">Authenticate <i class="fas fa-arrow-right"></i></span>
+                    <div id="btn-spinner" class="spinner" style="display: none;"></div>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p><i class="fas fa-fingerprint"></i> Secure Connection Established</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="login.js"></script>
+</body>
+</html>

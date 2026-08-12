@@ -21,6 +21,10 @@ from app.collectors.ht_collector import collect_articles as ht_news
 from app.collectors.indian_express_collector import collect_articles as indian_express_news
 
 from app.preprocessors.preprocessor import preprocess_articles
+from app.nlp.event_matcher import run_event_matching
+from app.nlp.entity_extractor import run_entity_extractor
+from app.nlp.sentiment_analyzer import run_sentiment_analyzer
+from app.nlp.officer_sentiment import run_officer_sentiment
 
 
 def run_pipeline():
@@ -61,14 +65,29 @@ def run_pipeline():
 
     try:
         print("\n================================")
-        print("Starting Preprocessing")
+        print("Starting Preprocessing & NLP Pipeline")
         print("================================\n")
+        
+        print("Step 1 : Preprocessing")
         preprocess_articles()
+        
+        print("Step 2 : Event Matching")
+        run_event_matching()
+        
+        print("Step 3 : Entity Extraction")
+        run_entity_extractor()
+        
+        print("Step 4 : Sentiment Analysis")
+        run_sentiment_analyzer()
+        
+        print("Step 5 : Officer Sentiment")
+        run_officer_sentiment()
+        
         print("\n================================")
-        print("Preprocessing Completed")
+        print("NLP Pipeline Completed")
         print("================================\n")
     except Exception as e:
-        print("Preprocessor Error:", e)
+        print("NLP/Preprocessor Error:", e)
 
     print("\n================================")
     print("Pipeline Completed Successfully")
@@ -77,8 +96,8 @@ def run_pipeline():
 
 if __name__ == "__main__":
     import schedule
-    # Run every 30 minutes
-    schedule.every(30).minutes.do(run_pipeline)
+    # Run every 1 hour
+    schedule.every(1).hours.do(run_pipeline)
     
     # Run once immediately when scheduler starts
     run_pipeline()
