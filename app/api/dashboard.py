@@ -152,17 +152,23 @@ def get_crime_analytics(db: Session = Depends(get_db), days: int = None, start_d
     categories = q_cat.all()
     cat_data = {c[0] or "Unknown": c[1] for c in categories}
     
-    q_month = db.query(func.strftime('%Y-%m', ProcessedArticle.published_date).label('month'), func.count(ProcessedArticle.id)).group_by('month').order_by('month')
-    q_month = apply_date_filter(q_month, ProcessedArticle.published_date, days, start_date, end_date)
-    monthly_data = q_month.all()
-    monthly_trend = [{"month": m[0] or "Unknown", "count": m[1]} for m in monthly_data]
-
-    q_week = db.query(func.strftime('%w', ProcessedArticle.published_date).label('dow'), func.count(ProcessedArticle.id)).group_by('dow')
-    q_week = apply_date_filter(q_week, ProcessedArticle.published_date, days, start_date, end_date)
-    weekly_data = q_week.all()
+    q_dates = db.query(ProcessedArticle.published_date)
+    q_dates = apply_date_filter(q_dates, ProcessedArticle.published_date, days, start_date, end_date)
+    dates = q_dates.all()
+    
+    month_counts = {}
+    dow_counts = {}
+    for (d,) in dates:
+        if not d: continue
+        m_str = d.strftime('%Y-%m')
+        dow_str = d.strftime('%w')
+        month_counts[m_str] = month_counts.get(m_str, 0) + 1
+        dow_counts[dow_str] = dow_counts.get(dow_str, 0) + 1
+        
+    monthly_trend = [{"month": m, "count": c} for m, c in sorted(month_counts.items())]
     
     dow_map = {"0": "Sun", "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat"}
-    weekly_distribution = {dow_map.get(str(w[0]), "Unknown"): w[1] for w in weekly_data}
+    weekly_distribution = {dow_map.get(k, "Unknown"): v for k, v in dow_counts.items()}
     
     for day in dow_map.values():
         if day not in weekly_distribution:
